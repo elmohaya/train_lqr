@@ -356,7 +356,7 @@ if __name__ == '__main__':
     print(f"   Model parameters: {count_parameters(model):,}")
     
     # Test forward pass
-    print(f"\n🧪 Test 1: Batch forward pass")
+    print(f"\n[TEST 1] Batch forward pass")
     batch_size = 32
     seq_len = 64
     input_dim = max_state_dim + dimension_encoding_size
@@ -374,10 +374,10 @@ if __name__ == '__main__':
     print(f"   Input shape: {input_sequence.shape}")
     print(f"   Output shape: {controls.shape}")
     print(f"   Control mask shape: {control_mask.shape}")
-    print("   ✓ Batch forward pass successful!")
+    print("   [OK] Batch forward pass successful!")
     
     # Test inference
-    print(f"\n🧪 Test 2: Single sequence inference")
+    print(f"\n[TEST 2] Single sequence inference")
     test_seq_len = 50
     test_state_dim = 4  # e.g., CartPole
     test_n_u = 1
@@ -389,10 +389,10 @@ if __name__ == '__main__':
     print(f"   State sequence shape: {state_sequence.shape}")
     print(f"   Predicted control shape: {control.shape}")
     print(f"   Expected control dim: {test_n_u}")
-    print("   ✓ Inference successful!")
+    print("   [OK] Inference successful!")
     
     # Test with different system
-    print(f"\n🧪 Test 3: Different system (6-DOF manipulator)")
+    print(f"\n[TEST 3] Different system (6-DOF manipulator)")
     test_state_dim = 12
     test_n_u = 6
     test_n_x = 12
@@ -403,9 +403,9 @@ if __name__ == '__main__':
     print(f"   State sequence shape: {state_sequence.shape}")
     print(f"   Predicted control shape: {control.shape}")
     print(f"   Expected control dim: {test_n_u}")
-    print("   ✓ Inference successful!")
+    print("   [OK] Inference successful!")
     
     print("\n" + "=" * 70)
-    print("✓ All tests passed!")
+    print("[OK] All tests passed!")
     print("=" * 70)
 

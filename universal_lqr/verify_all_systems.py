@@ -74,11 +74,11 @@ def verify_single_system(system_class, plot=True, verbose=True):
         results['lqr_success'] = lqr_success
         
         if not lqr_success:
-            print(f"  ✗ LQR design failed!")
+            print(f"  [X] LQR design failed!")
             return results
         
         if verbose:
-            print(f"  ✓ LQR gain computed: K shape = {K.shape}")
+            print(f"  [OK] LQR gain computed: K shape = {K.shape}")
         
         # Verify stability
         is_stable, max_eig, eigenvalues = verify_stability(system.A, system.B, K)
@@ -90,9 +90,9 @@ def verify_single_system(system_class, plot=True, verbose=True):
             print(f"  Closed-loop eigenvalues: {eigenvalues}")
             print(f"  Max real part: {max_eig:.6f}")
             if is_stable:
-                print(f"  ✓ System is stable!")
+                print(f"  [OK] System is stable!")
             else:
-                print(f"  ✗ System is NOT stable!")
+                print(f"  [X] System is NOT stable!")
                 return results
         
         # Simulate system with SMALLER initial conditions for verification
@@ -132,9 +132,9 @@ def verify_single_system(system_class, plot=True, verbose=True):
             print(f"  Max control effort: {max_control:.6f}")
             if results['settling_achieved']:
                 early_stop_msg = " (early stop)" if actual_sim_time < VERIFICATION_TIME - 0.1 else ""
-                print(f"  ✓ System settled to origin!{early_stop_msg}")
+                print(f"  [OK] System settled to origin!{early_stop_msg}")
             else:
-                print(f"  ⚠ System did not settle (norm={final_state_norm:.4f})")
+                print(f"  [WARNING] System did not settle (norm={final_state_norm:.4f})")
         
         # Plot results
         if plot:
@@ -149,7 +149,7 @@ def verify_single_system(system_class, plot=True, verbose=True):
         }
         
     except Exception as e:
-        print(f"  ✗ Error during verification: {e}")
+        print(f"  [X] Error during verification: {e}")
         import traceback
         traceback.print_exc()
         results['error'] = str(e)
@@ -360,8 +360,8 @@ def generate_summary_report(all_results, save_dir):
         for i, result in enumerate(all_results, 1):
             f.write(f"{i}. {result['name']}\n")
             f.write(f"   States: {result['n_states']}, Inputs: {result['n_inputs']}\n")
-            f.write(f"   LQR Success: {'✓' if result['lqr_success'] else '✗'}\n")
-            f.write(f"   Stable: {'✓' if result['stable'] else '✗'}\n")
+            f.write(f"   LQR Success: {'[OK]' if result['lqr_success'] else '[X]'}\n")
+            f.write(f"   Stable: {'[OK]' if result['stable'] else '[X]'}\n")
             
             if result['max_eigenvalue'] is not None:
                 f.write(f"   Max Eigenvalue: {result['max_eigenvalue']:.6f}\n")
@@ -371,7 +371,7 @@ def generate_summary_report(all_results, save_dir):
             
             if result['final_state_norm'] is not None:
                 f.write(f"   Final State Norm: {result['final_state_norm']:.6f}\n")
-                f.write(f"   Settled: {'✓' if result.get('settling_achieved', False) else '✗'}\n")
+                f.write(f"   Settled: {'[OK]' if result.get('settling_achieved', False) else '[X]'}\n")
             
             if 'error' in result:
                 f.write(f"   Error: {result['error']}\n")
@@ -441,12 +441,12 @@ def main():
     # List any failed systems
     failed = [r for r in all_results if not r['lqr_success'] or not r['stable']]
     if failed:
-        print(f"\n⚠ Warning: {len(failed)} system(s) failed:")
+        print(f"\n[WARNING] {len(failed)} system(s) failed:")
         for r in failed:
             status = "LQR failed" if not r['lqr_success'] else "Unstable"
             print(f"  - {r['name']}: {status}")
     else:
-        print("\n✓ All systems passed verification!")
+        print("\n[OK] All systems passed verification!")
     
     # Generate summary report
     print("\nGenerating summary report...")

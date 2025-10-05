@@ -97,9 +97,9 @@ def design_and_verify_lqr(system, verbose=False):
                                              custom_Q=Q, custom_R=R)
     
     if success and verbose:
-        print(f"  ✓ LQR controller designed successfully for {system.name}")
+        print(f"  LQR controller designed successfully for {system.name}")
     elif not success and verbose:
-        print(f"  ✗ LQR controller failed for {system.name}")
+        print(f"  LQR controller failed for {system.name}")
     
     return K, success
 

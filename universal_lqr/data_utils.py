@@ -249,7 +249,7 @@ if __name__ == '__main__':
     print("=" * 70)
     
     # Test dimension encoding
-    print("\n🧪 Test 1: Dimension encoding")
+    print("\n[TEST 1] Dimension encoding")
     n_u, n_x = 4, 12
     encoding = create_dimension_encoding(n_u, n_x)
     print(f"   n_u = {n_u}, n_x = {n_x}")
@@ -258,7 +258,7 @@ if __name__ == '__main__':
     print(f"   Expected: ({DIMENSION_ENCODING_SIZE},)")
     
     # Test state padding
-    print("\n🧪 Test 2: State padding")
+    print("\n[TEST 2] State padding")
     state = np.random.randn(4)  # CartPole state
     state_padded = pad_state(state)
     print(f"   Original shape: {state.shape}")
@@ -266,7 +266,7 @@ if __name__ == '__main__':
     print(f"   Non-zero entries: {np.count_nonzero(state_padded)}")
     
     # Test control padding
-    print("\n🧪 Test 3: Control padding")
+    print("\n[TEST 3] Control padding")
     control = np.random.randn(1)  # CartPole control
     control_padded = pad_control(control)
     print(f"   Original shape: {control.shape}")
@@ -274,7 +274,7 @@ if __name__ == '__main__':
     print(f"   Non-zero entries: {np.count_nonzero(control_padded)}")
     
     # Test input sequence preparation
-    print("\n🧪 Test 4: Input sequence preparation")
+    print("\n[TEST 4] Input sequence preparation")
     seq_len = 50
     n_x = 4
     n_u = 1
@@ -285,7 +285,7 @@ if __name__ == '__main__':
     print(f"   Expected: ({seq_len}, {MAX_STATE_DIM + DIMENSION_ENCODING_SIZE})")
     
     # Test batch preparation
-    print("\n🧪 Test 5: Batch preparation")
+    print("\n[TEST 5] Batch preparation")
     # Simulate 3 different systems
     state_seqs = [
         np.random.randn(50, 4),   # CartPole: 4 states, 1 control
@@ -315,6 +315,6 @@ if __name__ == '__main__':
         print(f"      System {i+1} (n_u={n_u}): {mask_sum} active dims")
     
     print("\n" + "=" * 70)
-    print("✓ All tests passed!")
+    print("[OK] All tests passed!")
     print("=" * 70)
 

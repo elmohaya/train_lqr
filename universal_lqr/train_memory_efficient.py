@@ -329,7 +329,7 @@ def main():
         if test_loss < best_val_loss:
             best_val_loss = test_loss
             torch.save(model.state_dict(), os.path.join(MODEL_DIR, 'best_model.pt'))
-            print(f"✓ Saved best model (test_loss: {test_loss:.6f})")
+            print(f"[OK] Saved best model (test_loss: {test_loss:.6f})")
         
         # Save checkpoint
         if (epoch + 1) % TRAINING_CONFIG['save_every'] == 0:

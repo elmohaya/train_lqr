@@ -321,7 +321,7 @@ def train_model(model, train_loader, val_loader, config, device, save_dir=MODEL_
                 'val_loss': val_loss,
                 'train_loss': train_loss,
             }, os.path.join(save_dir, 'best_model.pt'))
-            print(f"  ✓ Best model saved!")
+            print(f"  [OK] Best model saved!")
         
         # Save checkpoint periodically
         if (epoch + 1) % config['save_every'] == 0:

@@ -13,12 +13,12 @@ print("="*70)
 print("\n[1/7] Testing config import...")
 try:
     import config
-    print("  ✓ Config imported successfully")
+    print("  [OK] Config imported successfully")
     print(f"    - Sequence length: {config.SEQUENCE_LENGTH}")
     print(f"    - Time horizon: {config.TIME_HORIZON}s")
     print(f"    - Sampling rate: {config.DT}s")
 except Exception as e:
-    print(f"  ✗ Failed: {e}")
+    print(f"  [X] Failed: {e}")
     sys.exit(1)
 
 # Test 2: Import LQR controller
@@ -33,14 +33,14 @@ try:
     
     if success:
         is_stable, max_eig, _ = verify_stability(A, B, K)
-        print(f"  ✓ LQR controller working")
+        print(f"  [OK] LQR controller working")
         print(f"    - Stable: {is_stable}")
         print(f"    - Max eigenvalue real part: {max_eig:.6f}")
     else:
-        print("  ✗ LQR design failed")
+        print("  [X] LQR design failed")
         sys.exit(1)
 except Exception as e:
-    print(f"  ✗ Failed: {e}")
+    print(f"  [X] Failed: {e}")
     sys.exit(1)
 
 # Test 3: Import all systems
@@ -50,10 +50,10 @@ try:
     from data_generation import get_all_system_classes
     
     system_classes = get_all_system_classes()
-    print(f"  ✓ All systems imported successfully")
+    print(f"  [OK] All systems imported successfully")
     print(f"    - Total system families: {len(system_classes)}")
 except Exception as e:
-    print(f"  ✗ Failed: {e}")
+    print(f"  [X] Failed: {e}")
     sys.exit(1)
 
 # Test 4: Test a few systems
@@ -71,12 +71,12 @@ try:
         K, _, _, success = design_lqr(system.A, system.B, custom_Q=Q, custom_R=R)
         
         if success:
-            print(f"  ✓ {system.name}: n_states={system.n_states}, n_inputs={system.n_inputs}, LQR stable")
+            print(f"  [OK] {system.name}: n_states={system.n_states}, n_inputs={system.n_inputs}, LQR stable")
         else:
-            print(f"  ✗ {system.name}: LQR failed")
+            print(f"  [X] {system.name}: LQR failed")
     
 except Exception as e:
-    print(f"  ✗ Failed: {e}")
+    print(f"  [X] Failed: {e}")
     import traceback
     traceback.print_exc()
     sys.exit(1)
@@ -106,12 +106,12 @@ try:
     
     assert controls.shape == (batch_size, seq_len, 4)
     
-    print(f"  ✓ Transformer model working")
+    print(f"  [OK] Transformer model working")
     print(f"    - Parameters: {count_parameters(model):,}")
     print(f"    - Input shape: {states.shape}")
     print(f"    - Output shape: {controls.shape}")
 except Exception as e:
-    print(f"  ✗ Failed: {e}")
+    print(f"  [X] Failed: {e}")
     import traceback
     traceback.print_exc()
     sys.exit(1)
@@ -127,12 +127,12 @@ try:
     
     t, X, U = generate_trajectory(system, K, trajectory_idx=0)
     
-    print(f"  ✓ Data generation working")
+    print(f"  [OK] Data generation working")
     print(f"    - Trajectory length: {len(t)} timesteps")
     print(f"    - State shape: {X.shape}")
     print(f"    - Control shape: {U.shape}")
 except Exception as e:
-    print(f"  ✗ Failed: {e}")
+    print(f"  [X] Failed: {e}")
     import traceback
     traceback.print_exc()
     sys.exit(1)
@@ -163,11 +163,11 @@ try:
     
     sample = dataset[0]
     
-    print(f"  ✓ Training components working")
+    print(f"  [OK] Training components working")
     print(f"    - Dataset size: {len(dataset)}")
     print(f"    - Sample keys: {list(sample.keys())}")
 except Exception as e:
-    print(f"  ✗ Failed: {e}")
+    print(f"  [X] Failed: {e}")
     import traceback
     traceback.print_exc()
     sys.exit(1)
