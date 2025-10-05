@@ -1,0 +1,160 @@
+Generating new data...
+Generating data for 35 system families
+  - 10 variants per family
+  - 100 trajectories per variant
+  - Time horizon: 50.0s, dt: 0.02s
+  - Parameter uncertainty: ±10.0%
+  - Process noise std: 0.01
+
+System families:   0%|          | 0/35 [00:00<?, ?it/s]System families:   3%|▎         | 1/35 [00:29<16:28, 29.08s/it]System families:   6%|▌         | 2/35 [00:56<15:25, 28.04s/it]/Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/lqr_controller.py:186: RuntimeWarning: overflow encountered in add
+  X[i + 1] = X[i] + (dt / 6.0) * (k1 + 2*k2 + 2*k3 + k4) + noise
+/Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/lqr_controller.py:177: RuntimeWarning: invalid value encountered in matmul
+  k1 = A_sim @ X[i] + B_sim @ u
+/Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/lqr_controller.py:178: RuntimeWarning: invalid value encountered in add
+  k2 = A_sim @ (X[i] + 0.5 * dt * k1) + B_sim @ u
+/Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/lqr_controller.py:178: RuntimeWarning: invalid value encountered in matmul
+  k2 = A_sim @ (X[i] + 0.5 * dt * k1) + B_sim @ u
+/Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/lqr_controller.py:179: RuntimeWarning: invalid value encountered in matmul
+  k3 = A_sim @ (X[i] + 0.5 * dt * k2) + B_sim @ u
+/Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/lqr_controller.py:180: RuntimeWarning: invalid value encountered in matmul
+  k4 = A_sim @ (X[i] + dt * k3) + B_sim @ u
+/Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/lqr_controller.py:186: RuntimeWarning: overflow encountered in multiply
+  X[i + 1] = X[i] + (dt / 6.0) * (k1 + 2*k2 + 2*k3 + k4) + noise
+System families:   9%|▊         | 3/35 [01:55<22:27, 42.11s/it]System families:  11%|█▏        | 4/35 [02:25<19:17, 37.33s/it]System families:  14%|█▍        | 5/35 [02:55<17:18, 34.60s/it]System families:  17%|█▋        | 6/35 [03:25<15:58, 33.05s/it]/Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/lqr_controller.py:172: RuntimeWarning: invalid value encountered in matmul
+  u = -K @ X[i]
+System families:  20%|██        | 7/35 [04:24<19:25, 41.61s/it]System families:  23%|██▎       | 8/35 [04:56<17:21, 38.56s/it]System families:  26%|██▌       | 9/35 [05:29<16:01, 36.97s/it]/Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/lqr_controller.py:177: RuntimeWarning: invalid value encountered in add
+  k1 = A_sim @ X[i] + B_sim @ u
+/Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/lqr_controller.py:177: RuntimeWarning: overflow encountered in matmul
+  k1 = A_sim @ X[i] + B_sim @ u
+/Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/lqr_controller.py:178: RuntimeWarning: overflow encountered in matmul
+  k2 = A_sim @ (X[i] + 0.5 * dt * k1) + B_sim @ u
+/Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/lqr_controller.py:179: RuntimeWarning: overflow encountered in matmul
+  k3 = A_sim @ (X[i] + 0.5 * dt * k2) + B_sim @ u
+/Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/lqr_controller.py:180: RuntimeWarning: overflow encountered in matmul
+  k4 = A_sim @ (X[i] + dt * k3) + B_sim @ u
+/Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/lqr_controller.py:177: RuntimeWarning: overflow encountered in add
+  k1 = A_sim @ X[i] + B_sim @ u
+/Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/lqr_controller.py:186: RuntimeWarning: invalid value encountered in add
+  X[i + 1] = X[i] + (dt / 6.0) * (k1 + 2*k2 + 2*k3 + k4) + noise
+System families:  29%|██▊       | 10/35 [06:30<18:29, 44.39s/it]System families:  31%|███▏      | 11/35 [07:30<19:35, 48.97s/it]System families:  34%|███▍      | 12/35 [07:34<13:33, 35.35s/it]System families:  37%|███▋      | 13/35 [08:04<12:23, 33.79s/it]System families:  40%|████      | 14/35 [08:34<11:27, 32.76s/it]System families:  43%|████▎     | 15/35 [09:06<10:48, 32.42s/it]System families:  46%|████▌     | 16/35 [09:37<10:07, 31.96s/it]System families:  49%|████▊     | 17/35 [10:10<09:42, 32.38s/it]System families:  51%|█████▏    | 18/35 [10:40<08:58, 31.67s/it]/Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/lqr_controller.py:205: RuntimeWarning: invalid value encountered in matmul
+  U[-1] = -K @ X[-1]
+System families:  54%|█████▍    | 19/35 [11:18<08:55, 33.44s/it]System families:  57%|█████▋    | 20/35 [11:48<08:08, 32.57s/it]System families:  60%|██████    | 21/35 [12:20<07:30, 32.20s/it]System families:  63%|██████▎   | 22/35 [12:49<06:47, 31.32s/it]System families:  66%|██████▌   | 23/35 [13:17<06:04, 30.34s/it]System families:  69%|██████▊   | 24/35 [13:45<05:25, 29.60s/it]System families:  71%|███████▏  | 25/35 [14:15<04:55, 29.58s/it]System families:  74%|███████▍  | 26/35 [14:43<04:23, 29.28s/it]System families:  77%|███████▋  | 27/35 [15:11<03:50, 28.78s/it]System families:  80%|████████  | 28/35 [15:38<03:18, 28.34s/it]System families:  83%|████████▎ | 29/35 [16:09<02:54, 29.12s/it]System families:  86%|████████▌ | 30/35 [17:03<03:02, 36.47s/it]System families:  89%|████████▊ | 31/35 [17:32<02:17, 34.32s/it]System families:  91%|█████████▏| 32/35 [18:02<01:39, 33.16s/it]System families:  94%|█████████▍| 33/35 [18:33<01:04, 32.33s/it]System families:  97%|█████████▋| 34/35 [19:00<00:30, 30.86s/it]System families: 100%|██████████| 35/35 [19:29<00:00, 30.20s/it]System families: 100%|██████████| 35/35 [19:29<00:00, 33.41s/it]
+
+Generating data for: MassSpringDamper
+  ✓ LQR controller designed successfully for MassSpringDamper
+
+Generating data for: SimplePendulum
+  ✓ LQR controller designed successfully for SimplePendulum
+
+Generating data for: InvertedPendulum
+  ✓ LQR controller designed successfully for InvertedPendulum
+  Note: Skipped 200 unstable trajectories for InvertedPendulum variant 0
+
+Generating data for: DoublePendulum
+  ✓ LQR controller designed successfully for DoublePendulum
+
+Generating data for: CartPole
+  ✓ LQR controller designed successfully for CartPole
+
+Generating data for: Acrobot
+  ✓ LQR controller designed successfully for Acrobot
+
+Generating data for: FurutaPendulum
+  ✓ LQR controller designed successfully for FurutaPendulum
+  Note: Skipped 200 unstable trajectories for FurutaPendulum variant 0
+
+Generating data for: BallAndBeam
+  ✓ LQR controller designed successfully for BallAndBeam
+
+Generating data for: BallAndPlate
+  ✓ LQR controller designed successfully for BallAndPlate
+
+Generating data for: ReactionWheelPendulum
+  ✓ LQR controller designed successfully for ReactionWheelPendulum
+  Note: Skipped 200 unstable trajectories for ReactionWheelPendulum variant 0
+
+Generating data for: FlexibleBeam
+  ✓ LQR controller designed successfully for FlexibleBeam
+  Note: Skipped 200 unstable trajectories for FlexibleBeam variant 0
+
+Generating data for: MagneticLevitation
+  ✓ LQR controller designed successfully for MagneticLevitation
+
+Generating data for: SuspensionSystem
+  ✓ LQR controller designed successfully for SuspensionSystem
+
+Generating data for: DCMotor
+  ✓ LQR controller designed successfully for DCMotor
+
+Generating data for: TwoLinkArm
+  ✓ LQR controller designed successfully for TwoLinkArm
+
+Generating data for: ThreeLinkManipulator
+  ✓ LQR controller designed successfully for ThreeLinkManipulator
+
+Generating data for: UnicycleRobot
+  ✓ LQR controller designed successfully for UnicycleRobot
+
+Generating data for: DifferentialDriveRobot
+  ✓ LQR controller designed successfully for DifferentialDriveRobot
+
+Generating data for: SCARARobot
+  ✓ LQR controller designed successfully for SCARARobot
+  Note: Skipped 37 unstable trajectories for SCARARobot variant 0
+
+Generating data for: SegwayRobot
+  ✓ LQR controller designed successfully for SegwayRobot
+
+Generating data for: OmnidirectionalRobot
+  ✓ LQR controller designed successfully for OmnidirectionalRobot
+
+Generating data for: CableDrivenRobot
+  ✓ LQR controller designed successfully for CableDrivenRobot
+
+Generating data for: FlexibleJointRobot
+  ✓ LQR controller designed successfully for FlexibleJointRobot
+
+Generating data for: PlanarBiped
+  ✓ LQR controller designed successfully for PlanarBiped
+
+Generating data for: SixDOFManipulator
+  ✓ LQR controller designed successfully for SixDOFManipulator
+
+Generating data for: DualArmRobot
+  ✓ LQR controller designed successfully for DualArmRobot
+
+Generating data for: VehicleLateralDynamics
+  ✓ LQR controller designed successfully for VehicleLateralDynamics
+
+Generating data for: LongitudinalCruiseControl
+  ✓ LQR controller designed successfully for LongitudinalCruiseControl
+
+Generating data for: PlatooningModel
+  ✓ LQR controller designed successfully for PlatooningModel
+
+Generating data for: QuadrotorHover
+  ✓ LQR controller designed successfully for QuadrotorHover
+  Note: Skipped 94 unstable trajectories for QuadrotorHover variant 0
+
+Generating data for: FixedWingAircraft
+  ✓ LQR controller designed successfully for FixedWingAircraft
+
+Generating data for: VTOLLinearized
+  ✓ LQR controller designed successfully for VTOLLinearized
+
+Generating data for: DoubleIntegrator
+  ✓ LQR controller designed successfully for DoubleIntegrator
+
+Generating data for: LotkaVolterra
+  ✓ LQR controller designed successfully for LotkaVolterra
+
+Generating data for: ChemicalReactor
+  ✓ LQR controller designed successfully for ChemicalReactor
+
+============================================================
+Data generation complete!
+  - Total system variants: 350
+  - Total trajectories: 35000
+  - Failed systems: 0
+  - Data saved to: ./data/lqr_training_data.pkl
+============================================================

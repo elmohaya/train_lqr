@@ -1,0 +1,333 @@
+======================================================================
+====================== LQR VERIFICATION REPORT =======================
+======================================================================
+
+Total Systems Tested: 35
+LQR Success: 35/35 (100.0%)
+Stable Systems: 35/35 (100.0%)
+Settled Systems: 34/35 (97.1%)
+
+======================================================================
+========================== DETAILED RESULTS ==========================
+======================================================================
+
+1. MassSpringDamper
+   States: 2, Inputs: 1
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -2.580992
+   Simulation Time: 2.756s
+   Final State Norm: 0.000306
+   Settled: ✓
+
+2. SimplePendulum
+   States: 2, Inputs: 1
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -4.001657
+   Simulation Time: 2.157s
+   Final State Norm: 0.000282
+   Settled: ✓
+
+3. InvertedPendulum
+   States: 2, Inputs: 1
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -3.162727
+   Simulation Time: 1.879s
+   Final State Norm: 0.000424
+   Settled: ✓
+
+4. DoublePendulum
+   States: 4, Inputs: 1
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -3.189418
+   Simulation Time: 4.016s
+   Final State Norm: 0.000284
+   Settled: ✓
+
+5. CartPole
+   States: 4, Inputs: 1
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -1.325369
+   Simulation Time: 4.481s
+   Final State Norm: 0.004769
+   Settled: ✓
+
+6. Acrobot
+   States: 4, Inputs: 1
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -3.192582
+   Simulation Time: 4.003s
+   Final State Norm: 0.000498
+   Settled: ✓
+
+7. FurutaPendulum
+   States: 4, Inputs: 1
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -0.733796
+   Simulation Time: 7.000s
+   Final State Norm: 0.002681
+   Settled: ✓
+
+8. BallAndBeam
+   States: 4, Inputs: 1
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -1.949832
+   Simulation Time: 3.409s
+   Final State Norm: 0.001229
+   Settled: ✓
+
+9. BallAndPlate
+   States: 6, Inputs: 2
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -3.334798
+   Simulation Time: 2.629s
+   Final State Norm: 0.000294
+   Settled: ✓
+
+10. ReactionWheelPendulum
+   States: 4, Inputs: 1
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -1.051461
+   Simulation Time: 4.716s
+   Final State Norm: 0.003325
+   Settled: ✓
+
+11. FlexibleBeam
+   States: 2, Inputs: 1
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -41.630718
+   Simulation Time: 1.096s
+   Final State Norm: 0.000000
+   Settled: ✓
+
+12. MagneticLevitation
+   States: 3, Inputs: 1
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -17.299627
+   Simulation Time: 1.258s
+   Final State Norm: 0.000000
+   Settled: ✓
+
+13. SuspensionSystem
+   States: 4, Inputs: 1
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -2.770062
+   Simulation Time: 1.942s
+   Final State Norm: 0.000612
+   Settled: ✓
+
+14. DCMotor
+   States: 3, Inputs: 1
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -0.713319
+   Simulation Time: 9.061s
+   Final State Norm: 0.004901
+   Settled: ✓
+
+15. TwoLinkArm
+   States: 4, Inputs: 2
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -3.248437
+   Simulation Time: 2.584s
+   Final State Norm: 0.000389
+   Settled: ✓
+
+16. ThreeLinkManipulator
+   States: 6, Inputs: 3
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -2.214062
+   Simulation Time: 2.669s
+   Final State Norm: 0.000995
+   Settled: ✓
+
+17. UnicycleRobot
+   States: 5, Inputs: 2
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -1.944473
+   Simulation Time: 5.373s
+   Final State Norm: 0.000779
+   Settled: ✓
+
+18. DifferentialDriveRobot
+   States: 5, Inputs: 2
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -0.124519
+   Simulation Time: 46.445s
+   Final State Norm: 0.008833
+   Settled: ✓
+
+19. SCARARobot
+   States: 8, Inputs: 4
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -1.873796
+   Simulation Time: 2.902s
+   Final State Norm: 0.000469
+   Settled: ✓
+
+20. SegwayRobot
+   States: 4, Inputs: 1
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -0.189118
+   Simulation Time: 49.999s
+   Final State Norm: 0.025163
+   Settled: ✓
+
+21. OmnidirectionalRobot
+   States: 6, Inputs: 3
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -0.539655
+   Simulation Time: 9.591s
+   Final State Norm: 0.003552
+   Settled: ✓
+
+22. CableDrivenRobot
+   States: 4, Inputs: 3
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -1.102409
+   Simulation Time: 5.351s
+   Final State Norm: 0.002965
+   Settled: ✓
+
+23. FlexibleJointRobot
+   States: 4, Inputs: 1
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -4.752138
+   Simulation Time: 2.420s
+   Final State Norm: 0.000086
+   Settled: ✓
+
+24. PlanarBiped
+   States: 4, Inputs: 1
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -0.089509
+   Simulation Time: 49.999s
+   Final State Norm: 0.077000
+   Settled: ✓
+
+25. SixDOFManipulator
+   States: 12, Inputs: 6
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -0.999503
+   Simulation Time: 5.055s
+   Final State Norm: 0.001804
+   Settled: ✓
+
+26. DualArmRobot
+   States: 8, Inputs: 4
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -2.800609
+   Simulation Time: 2.771s
+   Final State Norm: 0.000601
+   Settled: ✓
+
+27. VehicleLateralDynamics
+   States: 4, Inputs: 1
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -1.764536
+   Simulation Time: 3.881s
+   Final State Norm: 0.002521
+   Settled: ✓
+
+28. LongitudinalCruiseControl
+   States: 2, Inputs: 1
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -0.004024
+   Simulation Time: 49.999s
+   Final State Norm: 0.501706
+   Settled: ✗
+
+29. PlatooningModel
+   States: 6, Inputs: 3
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -2.466218
+   Simulation Time: 4.146s
+   Final State Norm: 0.000639
+   Settled: ✓
+
+30. QuadrotorHover
+   States: 12, Inputs: 4
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -1.502060
+   Simulation Time: 5.366s
+   Final State Norm: 0.002420
+   Settled: ✓
+
+31. FixedWingAircraft
+   States: 4, Inputs: 1
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -0.561923
+   Simulation Time: 9.605s
+   Final State Norm: 0.006464
+   Settled: ✓
+
+32. VTOLLinearized
+   States: 6, Inputs: 2
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -1.416667
+   Simulation Time: 5.083s
+   Final State Norm: 0.000769
+   Settled: ✓
+
+33. DoubleIntegrator
+   States: 2, Inputs: 1
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -2.738613
+   Simulation Time: 2.416s
+   Final State Norm: 0.002871
+   Settled: ✓
+
+34. LotkaVolterra
+   States: 2, Inputs: 2
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -3.214062
+   Simulation Time: 2.685s
+   Final State Norm: 0.000363
+   Settled: ✓
+
+35. ChemicalReactor
+   States: 2, Inputs: 1
+   LQR Success: ✓
+   Stable: ✓
+   Max Eigenvalue: -0.177293
+   Simulation Time: 49.999s
+   Final State Norm: 0.010413
+   Settled: ✓
+
+======================================================================
+=========================== FAILED SYSTEMS ===========================
+======================================================================
+
+None! All systems passed verification.
