@@ -238,14 +238,21 @@ def main():
     np.random.seed(RANDOM_SEED)
     py_random.seed(RANDOM_SEED)
     
-    # Device - use Apple Silicon GPU if available
+    # Device - use GPU(s) if available
     if torch.cuda.is_available():
         device = torch.device('cuda')
+        n_gpus = torch.cuda.device_count()
+        print(f"Using device: cuda with {n_gpus} GPU(s)")
+        for i in range(n_gpus):
+            print(f"  GPU {i}: {torch.cuda.get_device_name(i)}")
     elif torch.backends.mps.is_available():
         device = torch.device('mps')  # Apple Silicon GPU
+        n_gpus = 1
+        print(f"Using device: {device}")
     else:
         device = torch.device('cpu')
-    print(f"Using device: {device}")
+        n_gpus = 0
+        print(f"Using device: {device}")
     
     # Load data with memory-efficient dataset
     data_file = os.path.join(DATA_DIR, 'lqr_training_data.pkl')
@@ -270,19 +277,23 @@ def main():
     print(f"Test size: {test_size:,} (5%)")
     
     # Create dataloaders
+    # Use multiple workers and pin_memory for GPU training
+    num_workers = 4 if torch.cuda.is_available() else 0
+    pin_memory = torch.cuda.is_available()
+    
     train_loader = DataLoader(
         train_dataset,
         batch_size=TRAINING_CONFIG['batch_size'],
         shuffle=True,
-        num_workers=0,  # Single-threaded to save memory
-        pin_memory=False
+        num_workers=num_workers,
+        pin_memory=pin_memory
     )
     test_loader = DataLoader(
         test_dataset,
         batch_size=TRAINING_CONFIG['batch_size'],
         shuffle=False,
-        num_workers=0,
-        pin_memory=False
+        num_workers=num_workers,
+        pin_memory=pin_memory
     )
     
     # Create model
@@ -297,10 +308,17 @@ def main():
         d_ff=TRANSFORMER_CONFIG['d_ff'],
         dropout=TRANSFORMER_CONFIG['dropout'],
         max_seq_len=TRANSFORMER_CONFIG['max_seq_len']
-    ).to(device)
+    )
     
     n_params = count_parameters(model)
     print(f"Model parameters: {n_params:,}")
+    
+    # Enable multi-GPU training if available
+    if n_gpus > 1:
+        print(f"Using DataParallel across {n_gpus} GPUs")
+        model = nn.DataParallel(model)
+    
+    model = model.to(device)
     
     # Optimizer
     optimizer = optim.Adam(model.parameters(), lr=TRAINING_CONFIG['learning_rate'])
@@ -328,14 +346,17 @@ def main():
         # Save best model
         if test_loss < best_val_loss:
             best_val_loss = test_loss
-            torch.save(model.state_dict(), os.path.join(MODEL_DIR, 'best_model.pt'))
+            # Save model (handle DataParallel wrapper)
+            model_to_save = model.module if hasattr(model, 'module') else model
+            torch.save(model_to_save.state_dict(), os.path.join(MODEL_DIR, 'best_model.pt'))
             print(f"[OK] Saved best model (test_loss: {test_loss:.6f})")
         
         # Save checkpoint
         if (epoch + 1) % TRAINING_CONFIG['save_every'] == 0:
+            model_to_save = model.module if hasattr(model, 'module') else model
             torch.save({
                 'epoch': epoch,
-                'model_state_dict': model.state_dict(),
+                'model_state_dict': model_to_save.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'train_loss': train_loss,
                 'test_loss': test_loss,

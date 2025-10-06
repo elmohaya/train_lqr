@@ -68,7 +68,7 @@ TRANSFORMER_CONFIG = {
 # ============================================================================
 
 TRAINING_CONFIG = {
-    'batch_size': 128,  # Increased for better GPU utilization
+    'batch_size': 256,  # Increased for multi-GPU training (256 * 3 = 768 effective)
     'learning_rate': 1e-4,
     'num_epochs': 30,  # Reduced from 100 (30 is usually sufficient)
     'warmup_steps': 1000,
