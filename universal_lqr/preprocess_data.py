@@ -128,9 +128,16 @@ def preprocess_all_sequences(data_file, output_file, sequence_length=32):
         hf.create_dataset('control_mean', data=control_mean)
         hf.create_dataset('control_std', data=control_std)
         
-        # Process and save all sequences
+        # Process and save all sequences (with batching for speed)
         seq_idx = 0
-        for system_data in tqdm(all_data, desc="Processing systems"):
+        batch_size = 10000
+        
+        # Temporary buffers for batching
+        input_batch = []
+        control_batch = []
+        mask_batch = []
+        
+        for system_idx, system_data in enumerate(tqdm(all_data, desc="Processing systems")):
             n_states = system_data['n_states']
             n_inputs = system_data['n_inputs']
             
@@ -144,7 +151,7 @@ def preprocess_all_sequences(data_file, output_file, sequence_length=32):
             control_mask = np.zeros(MAX_INPUT_DIM, dtype=np.float32)
             control_mask[:n_inputs] = 1.0
             
-            for trajectory in system_data['trajectories']:
+            for traj_idx, trajectory in enumerate(system_data['trajectories']):
                 traj_len = len(trajectory['time'])
                 n_sequences = traj_len - sequence_length
                 
@@ -172,12 +179,39 @@ def preprocess_all_sequences(data_file, output_file, sequence_length=32):
                     control_padded = np.zeros(MAX_INPUT_DIM, dtype=np.float32)
                     control_padded[:n_inputs] = control
                     
-                    # Save to HDF5
-                    input_sequences[seq_idx] = input_seq
-                    controls[seq_idx] = control_padded
-                    control_masks[seq_idx] = control_mask
+                    # Add to batch
+                    input_batch.append(input_seq)
+                    control_batch.append(control_padded)
+                    mask_batch.append(control_mask)
                     
-                    seq_idx += 1
+                    # Write batch when full
+                    if len(input_batch) >= batch_size:
+                        batch_start = seq_idx
+                        batch_end = seq_idx + len(input_batch)
+                        
+                        input_sequences[batch_start:batch_end] = np.array(input_batch)
+                        controls[batch_start:batch_end] = np.array(control_batch)
+                        control_masks[batch_start:batch_end] = np.array(mask_batch)
+                        
+                        seq_idx = batch_end
+                        input_batch = []
+                        control_batch = []
+                        mask_batch = []
+            
+            # Print progress every 50 systems
+            if (system_idx + 1) % 50 == 0:
+                print(f"  Progress: {seq_idx:,} sequences processed...")
+        
+        # Write remaining sequences
+        if len(input_batch) > 0:
+            batch_start = seq_idx
+            batch_end = seq_idx + len(input_batch)
+            
+            input_sequences[batch_start:batch_end] = np.array(input_batch)
+            controls[batch_start:batch_end] = np.array(control_batch)
+            control_masks[batch_start:batch_end] = np.array(mask_batch)
+            
+            seq_idx = batch_end
         
         print(f"\nProcessed {seq_idx:,} sequences")
     
