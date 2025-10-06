@@ -175,31 +175,52 @@ class MemoryEfficientLQRDataset(Dataset):
         }
 
 
-def train_epoch(model, dataloader, optimizer, device):
-    """Train for one epoch with masked loss."""
+def train_epoch(model, dataloader, optimizer, device, use_amp=True):
+    """Train for one epoch with masked loss and mixed precision."""
     model.train()
     total_loss = 0.0
     n_batches = 0
     
+    # Use automatic mixed precision for faster training
+    scaler = torch.cuda.amp.GradScaler() if use_amp and torch.cuda.is_available() else None
+    
     for batch in tqdm(dataloader, desc="Training"):
-        input_sequence = batch['input_sequence'].to(device)
-        controls_target = batch['control'].to(device)
-        control_mask = batch['control_mask'].to(device)
+        input_sequence = batch['input_sequence'].to(device, non_blocking=True)
+        controls_target = batch['control'].to(device, non_blocking=True)
+        control_mask = batch['control_mask'].to(device, non_blocking=True)
         
-        # Forward pass
-        controls_pred = model(input_sequence, control_mask=control_mask)
-        controls_pred_last = controls_pred[:, -1, :]
-        
-        # Compute masked loss
-        loss_per_dim = (controls_pred_last - controls_target) ** 2
-        masked_loss = loss_per_dim * control_mask
-        loss = masked_loss.sum() / control_mask.sum()
-        
-        # Backward pass
         optimizer.zero_grad()
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-        optimizer.step()
+        
+        # Mixed precision forward pass
+        if scaler is not None:
+            with torch.cuda.amp.autocast():
+                controls_pred = model(input_sequence, control_mask=control_mask)
+                controls_pred_last = controls_pred[:, -1, :]
+                
+                # Compute masked loss
+                loss_per_dim = (controls_pred_last - controls_target) ** 2
+                masked_loss = loss_per_dim * control_mask
+                loss = masked_loss.sum() / control_mask.sum()
+            
+            # Backward pass with gradient scaling
+            scaler.scale(loss).backward()
+            scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            # Standard forward pass
+            controls_pred = model(input_sequence, control_mask=control_mask)
+            controls_pred_last = controls_pred[:, -1, :]
+            
+            loss_per_dim = (controls_pred_last - controls_target) ** 2
+            masked_loss = loss_per_dim * control_mask
+            loss = masked_loss.sum() / control_mask.sum()
+            
+            # Backward pass
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            optimizer.step()
         
         total_loss += loss.item()
         n_batches += 1
@@ -207,24 +228,34 @@ def train_epoch(model, dataloader, optimizer, device):
     return total_loss / n_batches
 
 
-def validate(model, dataloader, device):
-    """Validate the model."""
+def validate(model, dataloader, device, use_amp=True):
+    """Validate the model with mixed precision."""
     model.eval()
     total_loss = 0.0
     n_batches = 0
     
     with torch.no_grad():
         for batch in tqdm(dataloader, desc="Validation"):
-            input_sequence = batch['input_sequence'].to(device)
-            controls_target = batch['control'].to(device)
-            control_mask = batch['control_mask'].to(device)
+            input_sequence = batch['input_sequence'].to(device, non_blocking=True)
+            controls_target = batch['control'].to(device, non_blocking=True)
+            control_mask = batch['control_mask'].to(device, non_blocking=True)
             
-            controls_pred = model(input_sequence, control_mask=control_mask)
-            controls_pred_last = controls_pred[:, -1, :]
-            
-            loss_per_dim = (controls_pred_last - controls_target) ** 2
-            masked_loss = loss_per_dim * control_mask
-            loss = masked_loss.sum() / control_mask.sum()
+            # Use mixed precision for validation too
+            if use_amp and torch.cuda.is_available():
+                with torch.cuda.amp.autocast():
+                    controls_pred = model(input_sequence, control_mask=control_mask)
+                    controls_pred_last = controls_pred[:, -1, :]
+                    
+                    loss_per_dim = (controls_pred_last - controls_target) ** 2
+                    masked_loss = loss_per_dim * control_mask
+                    loss = masked_loss.sum() / control_mask.sum()
+            else:
+                controls_pred = model(input_sequence, control_mask=control_mask)
+                controls_pred_last = controls_pred[:, -1, :]
+                
+                loss_per_dim = (controls_pred_last - controls_target) ** 2
+                masked_loss = loss_per_dim * control_mask
+                loss = masked_loss.sum() / control_mask.sum()
             
             total_loss += loss.item()
             n_batches += 1
@@ -277,23 +308,30 @@ def main():
     print(f"Test size: {test_size:,} (5%)")
     
     # Create dataloaders
-    # Use multiple workers and pin_memory for GPU training
-    num_workers = 4 if torch.cuda.is_available() else 0
+    # Use many workers for fast data loading on multi-GPU server
+    num_workers = 16 if torch.cuda.is_available() else 0
     pin_memory = torch.cuda.is_available()
+    prefetch_factor = 4 if torch.cuda.is_available() else 2
+    
+    print(f"DataLoader config: num_workers={num_workers}, pin_memory={pin_memory}, prefetch_factor={prefetch_factor}")
     
     train_loader = DataLoader(
         train_dataset,
         batch_size=TRAINING_CONFIG['batch_size'],
         shuffle=True,
         num_workers=num_workers,
-        pin_memory=pin_memory
+        pin_memory=pin_memory,
+        prefetch_factor=prefetch_factor,
+        persistent_workers=True if num_workers > 0 else False
     )
     test_loader = DataLoader(
         test_dataset,
         batch_size=TRAINING_CONFIG['batch_size'],
         shuffle=False,
         num_workers=num_workers,
-        pin_memory=pin_memory
+        pin_memory=pin_memory,
+        prefetch_factor=prefetch_factor,
+        persistent_workers=True if num_workers > 0 else False
     )
     
     # Create model
@@ -333,12 +371,12 @@ def main():
     for epoch in range(TRAINING_CONFIG['num_epochs']):
         print(f"\nEpoch {epoch+1}/{TRAINING_CONFIG['num_epochs']}")
         
-        # Train
-        train_loss = train_epoch(model, train_loader, optimizer, device)
+        # Train with mixed precision
+        train_loss = train_epoch(model, train_loader, optimizer, device, use_amp=True)
         history['train_loss'].append(train_loss)
         
-        # Test
-        test_loss = validate(model, test_loader, device)
+        # Test with mixed precision
+        test_loss = validate(model, test_loader, device, use_amp=True)
         history['val_loss'].append(test_loss)
         
         print(f"Train Loss: {train_loss:.6f} | Test Loss: {test_loss:.6f}")

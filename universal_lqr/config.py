@@ -68,8 +68,8 @@ TRANSFORMER_CONFIG = {
 # ============================================================================
 
 TRAINING_CONFIG = {
-    'batch_size': 256,  # Increased for multi-GPU training (256 * 3 = 768 effective)
-    'learning_rate': 1e-4,
+    'batch_size': 1024,  # Large batch for 3x RTX 2080 Ti (11GB each) = ~3072 effective batch
+    'learning_rate': 2e-4,  # Increased learning rate for larger batch size
     'num_epochs': 30,  # Reduced from 100 (30 is usually sufficient)
     'warmup_steps': 1000,
     'gradient_clip': 1.0,
