@@ -182,7 +182,7 @@ def train_epoch(model, dataloader, optimizer, device, use_amp=True):
     n_batches = 0
     
     # Use automatic mixed precision for faster training
-    scaler = torch.cuda.amp.GradScaler() if use_amp and torch.cuda.is_available() else None
+    scaler = torch.amp.GradScaler('cuda') if use_amp and torch.cuda.is_available() else None
     
     for batch in tqdm(dataloader, desc="Training"):
         input_sequence = batch['input_sequence'].to(device, non_blocking=True)
@@ -193,7 +193,7 @@ def train_epoch(model, dataloader, optimizer, device, use_amp=True):
         
         # Mixed precision forward pass
         if scaler is not None:
-            with torch.cuda.amp.autocast():
+            with torch.amp.autocast('cuda'):
                 controls_pred = model(input_sequence, control_mask=control_mask)
                 controls_pred_last = controls_pred[:, -1, :]
                 
@@ -242,7 +242,7 @@ def validate(model, dataloader, device, use_amp=True):
             
             # Use mixed precision for validation too
             if use_amp and torch.cuda.is_available():
-                with torch.cuda.amp.autocast():
+                with torch.amp.autocast('cuda'):
                     controls_pred = model(input_sequence, control_mask=control_mask)
                     controls_pred_last = controls_pred[:, -1, :]
                     
