@@ -162,9 +162,10 @@ def create_train_state(rng, learning_rate):
         dimension_encoding_size=DIMENSION_ENCODING_SIZE
     )
     
-    # Initialize
+    # Initialize with RNG for dropout
     dummy_input = jnp.ones((1, SEQUENCE_LENGTH, MAX_STATE_DIM + DIMENSION_ENCODING_SIZE))
-    variables = model.init(rng, dummy_input, training=False)
+    rng, init_rng, dropout_rng = random.split(rng, 3)
+    variables = model.init({'params': init_rng, 'dropout': dropout_rng}, dummy_input, training=False)
     
     # Create optimizer with warmup
     schedule = optax.warmup_cosine_decay_schedule(
@@ -186,16 +187,17 @@ def create_train_state(rng, learning_rate):
     ), variables
 
 
-@partial(jax.jit, static_argnums=(4,))
-def train_step(state, batch_inputs, batch_targets, batch_masks, training=True):
+@partial(jax.jit, static_argnums=(5,))
+def train_step(state, batch_inputs, batch_targets, batch_masks, rng, training=True):
     """Single training step (JIT compiled)."""
     
     def loss_fn(params):
-        # Forward pass
+        # Forward pass with RNG for dropout
         outputs = state.apply_fn(
             {'params': params},
             batch_inputs,
-            training=training
+            training=training,
+            rngs={'dropout': rng}
         )
         
         # Extract last timestep
@@ -221,11 +223,12 @@ def train_step(state, batch_inputs, batch_targets, batch_masks, training=True):
 def eval_step(state, batch_inputs, batch_targets, batch_masks, training=False):
     """Single evaluation step (JIT compiled)."""
     
-    # Forward pass
+    # Forward pass (no dropout during eval, so no RNG needed)
     outputs = state.apply_fn(
         {'params': state.params},
         batch_inputs,
-        training=training
+        training=training,
+        rngs={}  # Empty dict for eval mode
     )
     
     # Extract last timestep
@@ -286,7 +289,10 @@ def train_epoch(state, h5file, train_indices, batch_size, rng):
             h5file, shuffled_indices, i * batch_size, batch_size
         )
         
-        state, loss = train_step(state, batch_inputs, batch_targets, batch_masks, training=True)
+        # Generate RNG key for this batch (for dropout)
+        rng, dropout_rng = random.split(rng)
+        
+        state, loss = train_step(state, batch_inputs, batch_targets, batch_masks, dropout_rng, training=True)
         epoch_loss += loss
     
     return state, epoch_loss / n_batches, rng
