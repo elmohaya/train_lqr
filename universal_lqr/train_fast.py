@@ -24,7 +24,7 @@ from transformer_model import UniversalLQRTransformer, count_parameters
 
 
 class FastH5Dataset(Dataset):
-    """Lightning-fast dataset that reads pre-processed HDF5 data."""
+    """Optimized dataset that reads pre-processed HDF5 data efficiently."""
     
     def __init__(self, h5_file, indices):
         """
@@ -41,17 +41,24 @@ class FastH5Dataset(Dataset):
     
     def __getitem__(self, idx):
         # Lazy open HDF5 file (for multi-processing)
+        # Each worker opens its own file handle (required for multiprocessing)
         if self.h5f is None:
-            self.h5f = h5py.File(self.h5_file, 'r')
+            self.h5f = h5py.File(self.h5_file, 'r', rdcc_nbytes=1024**3, rdcc_nslots=10000)
+            # rdcc_nbytes: 1GB cache per worker for faster reads
+            # rdcc_nslots: number of chunk slots in cache
         
         real_idx = self.indices[idx]
         
-        # IMPORTANT: Only reads ONE sequence from disk (~2.4 KB)
-        # Does NOT load entire 13.9 GB file into RAM!
+        # Read data directly (HDF5 caching makes this fast)
+        # Returns numpy arrays, convert to torch tensors
+        input_seq = np.array(self.h5f['input_sequences'][real_idx], dtype=np.float32)
+        control = np.array(self.h5f['controls'][real_idx], dtype=np.float32)
+        mask = np.array(self.h5f['control_masks'][real_idx], dtype=np.float32)
+        
         return {
-            'input_sequence': torch.from_numpy(self.h5f['input_sequences'][real_idx]),
-            'control': torch.from_numpy(self.h5f['controls'][real_idx]),
-            'control_mask': torch.from_numpy(self.h5f['control_masks'][real_idx])
+            'input_sequence': torch.from_numpy(input_seq),
+            'control': torch.from_numpy(control),
+            'control_mask': torch.from_numpy(mask)
         }
 
 
@@ -65,7 +72,9 @@ def train_epoch(model, dataloader, optimizer, device, use_amp=True):
     use_scaler = use_amp and torch.cuda.is_available()
     scaler = torch.amp.GradScaler('cuda') if use_scaler else None
     
-    for batch in tqdm(dataloader, desc="Training", dynamic_ncols=True):
+    # Progress bar with loss display
+    pbar = tqdm(dataloader, desc="Training", dynamic_ncols=True)
+    for batch in pbar:
         input_sequence = batch['input_sequence'].to(device, non_blocking=True)
         controls_target = batch['control'].to(device, non_blocking=True)
         control_mask = batch['control_mask'].to(device, non_blocking=True)
@@ -100,6 +109,9 @@ def train_epoch(model, dataloader, optimizer, device, use_amp=True):
         
         total_loss += loss.item()
         n_batches += 1
+        
+        # Update progress bar with current loss
+        pbar.set_postfix({'loss': f'{loss.item():.6f}', 'avg_loss': f'{total_loss/n_batches:.6f}'})
     
     return total_loss / n_batches
 
@@ -192,11 +204,32 @@ def main():
     test_dataset = FastH5Dataset(h5_file, test_indices)
     
     # Create dataloaders
-    # Use fewer workers on Mac, more on Linux server
-    num_workers = 4 if (torch.cuda.is_available() or torch.backends.mps.is_available()) else 0
+    # CRITICAL: Use many workers for multi-GPU server to avoid data loading bottleneck
+    if n_gpus > 1:
+        # Multi-GPU server: use 8 workers per GPU
+        num_workers = n_gpus * 8  # 3 GPUs * 8 = 24 workers
+        prefetch_factor = 4  # Each worker prefetches 4 batches
+    elif torch.cuda.is_available():
+        # Single GPU: moderate workers
+        num_workers = 8
+        prefetch_factor = 2
+    elif torch.backends.mps.is_available():
+        # Mac GPU: fewer workers
+        num_workers = 4
+        prefetch_factor = 2
+    else:
+        # CPU only
+        num_workers = 0
+        prefetch_factor = 2
+    
     pin_memory = torch.cuda.is_available()  # Only pin memory for CUDA, not MPS
     
-    print(f"\nDataLoader config: batch_size={TRAINING_CONFIG['batch_size']}, num_workers={num_workers}")
+    print(f"\nDataLoader config:")
+    print(f"  batch_size: {TRAINING_CONFIG['batch_size']}")
+    print(f"  num_workers: {num_workers}")
+    print(f"  prefetch_factor: {prefetch_factor}")
+    print(f"  pin_memory: {pin_memory}")
+    print(f"  Effective batch size: {TRAINING_CONFIG['batch_size'] * max(1, n_gpus)}")
     
     train_loader = DataLoader(
         train_dataset,
@@ -204,6 +237,7 @@ def main():
         shuffle=True,
         num_workers=num_workers,
         pin_memory=pin_memory,
+        prefetch_factor=prefetch_factor if num_workers > 0 else None,
         persistent_workers=True if num_workers > 0 else False
     )
     test_loader = DataLoader(
@@ -212,6 +246,7 @@ def main():
         shuffle=False,
         num_workers=num_workers,
         pin_memory=pin_memory,
+        prefetch_factor=prefetch_factor if num_workers > 0 else None,
         persistent_workers=True if num_workers > 0 else False
     )
     

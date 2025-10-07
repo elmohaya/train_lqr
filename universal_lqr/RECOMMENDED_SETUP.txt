@@ -1,0 +1,116 @@
+RECOMMENDED SETUP (Use PyTorch - Most Reliable)
+==============================================
+
+JAX has strict CUDA version requirements and can be difficult to setup.
+PyTorch is production-ready, widely used, and works immediately.
+
+Your train_fast.py already supports:
+- Multi-GPU training (all 3 RTX 2080 Ti will be used)
+- Mixed precision (FP16) for faster training
+- HDF5 data streaming (minimal RAM usage)
+- DataParallel (automatic multi-GPU)
+
+
+SERVER SETUP COMMANDS:
+======================
+
+1. Install PyTorch with CUDA support:
+   -----------------------------------
+   pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+   (This installs PyTorch with CUDA 11.8 support, compatible with RTX 2080 Ti)
+
+
+2. Verify PyTorch can see GPUs:
+   -----------------------------
+   python3 -c "import torch; print('CUDA available:', torch.cuda.is_available()); print('GPU count:', torch.cuda.device_count()); [print(f'GPU {i}:', torch.cuda.get_device_name(i)) for i in range(torch.cuda.device_count())]"
+
+   Expected output:
+   CUDA available: True
+   GPU count: 3
+   GPU 0: NVIDIA GeForce RTX 2080 Ti
+   GPU 1: NVIDIA GeForce RTX 2080 Ti
+   GPU 2: NVIDIA GeForce RTX 2080 Ti
+
+
+3. Install other dependencies:
+   ----------------------------
+   pip3 install numpy scipy h5py tqdm matplotlib
+
+
+4. Transfer data file (if not already done):
+   ------------------------------------------
+   # From your Mac (run this locally):
+   scp /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/data/training_data.h5 \
+       maitham@ube:~/train_lqr/universal_lqr/data/
+
+
+5. Train the model:
+   ----------------
+   cd ~/train_lqr/universal_lqr
+   python3 train_fast.py
+
+   Expected output:
+   - Using device: cuda with 3 GPU(s)
+   - GPU 0: NVIDIA GeForce RTX 2080 Ti
+   - GPU 1: NVIDIA GeForce RTX 2080 Ti
+   - GPU 2: NVIDIA GeForce RTX 2080 Ti
+   - Using DataParallel across 3 GPUs
+   - Training starts...
+
+
+6. Monitor GPU usage:
+   ------------------
+   # In another terminal:
+   watch -n 1 nvidia-smi
+
+   You should see all 3 GPUs at 90-100% utilization.
+
+
+ESTIMATED PERFORMANCE:
+=====================
+With 3x RTX 2080 Ti (11GB each):
+- Batch size: 1024 per GPU × 3 = 3072 effective
+- Speed: ~5-10 minutes per epoch
+- Total training (30 epochs): 2.5-5 hours
+- Memory usage: ~8-9 GB per GPU
+
+
+WHY PYTORCH OVER JAX:
+=====================
+1. Better CUDA compatibility (works with CUDA 11.x and 12.x)
+2. More mature ecosystem
+3. Widely used in production
+4. No version conflicts
+5. Easier debugging
+6. Similar performance for this task
+
+JAX advantages are mainly for research code with heavy use of
+automatic differentiation and JIT compilation. For your use case
+(standard transformer training), PyTorch is equally good and
+much more reliable.
+
+
+TRAINING COMMAND:
+=================
+cd ~/train_lqr/universal_lqr
+python3 train_fast.py 2>&1 | tee training.log
+
+This will:
+- Train the model
+- Save best model to models/best_model.pt
+- Log everything to training.log
+- Use all 3 GPUs automatically
+
+
+TROUBLESHOOTING:
+================
+Q: "RuntimeError: CUDA out of memory"
+A: Edit config.py, reduce batch_size to 512 or 256
+
+Q: "Still too slow"
+A: Increase SEQUENCE_STRIDE to 32 in config.py, regenerate data
+
+Q: "FileNotFoundError: training_data.h5"
+A: Make sure you transferred the data file or run data_generation.py
+
