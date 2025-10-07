@@ -240,13 +240,29 @@ def eval_step(state, batch_inputs, batch_targets, batch_masks, training=False):
 
 
 def load_batch_from_h5(h5file, indices, start_idx, batch_size):
-    """Load a batch from HDF5 file."""
+    """Load a batch from HDF5 file.
+    
+    HDF5 requires indices to be in increasing order for fancy indexing.
+    We sort them, load data, then restore original shuffle order.
+    """
     end_idx = min(start_idx + batch_size, len(indices))
     batch_indices = indices[start_idx:end_idx]
     
-    inputs = h5file['input_sequences'][batch_indices]
-    controls = h5file['controls'][batch_indices]
-    masks = h5file['control_masks'][batch_indices]
+    # CRITICAL FIX: HDF5 requires sorted indices
+    # Sort indices and keep track of original order
+    sort_order = np.argsort(batch_indices)
+    sorted_indices = batch_indices[sort_order]
+    
+    # Load data with sorted indices
+    inputs = h5file['input_sequences'][sorted_indices]
+    controls = h5file['controls'][sorted_indices]
+    masks = h5file['control_masks'][sorted_indices]
+    
+    # Restore original shuffle order
+    unsort_order = np.argsort(sort_order)
+    inputs = inputs[unsort_order]
+    controls = controls[unsort_order]
+    masks = masks[unsort_order]
     
     return (
         jnp.array(inputs),
