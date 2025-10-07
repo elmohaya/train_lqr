@@ -16,7 +16,7 @@ SAVE_NEW_DATA = True
 NUM_TRAJECTORIES_PER_VARIANT = 100
 
 # Time parameters
-TIME_HORIZON = 50.0  # seconds
+TIME_HORIZON = 50.0  # seconds (2500 timesteps per trajectory)
 DT = 0.02   # sampling time (50 Hz)
 
 # Number of variants per system family (different parameters)
@@ -35,6 +35,12 @@ PROCESS_NOISE_STD = 0.01
 
 # Sequence length for transformer (number of past timesteps to condition on)
 SEQUENCE_LENGTH = 32  # Reduced from 64 for faster training
+
+# Sequence stride (how many timesteps to skip between consecutive sequences)
+# stride=1: maximum overlap (72M sequences, very slow)
+# stride=16: moderate overlap - 50% (4.5M sequences, balanced) [RECOMMENDED]
+# stride=32: no overlap (2.3M sequences, fastest training)
+SEQUENCE_STRIDE = 1  # Good balance between coverage and training speed
 
 # System dimension parameters (for padding and masking)
 MAX_STATE_DIM = 12  # Maximum state dimension across all systems

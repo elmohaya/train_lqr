@@ -1,0 +1,132 @@
+SERVER SETUP INSTRUCTIONS
+=========================
+
+1. TRANSFER FILES TO SERVER
+   -------------------------
+   From your Mac, run:
+   
+   scp -r /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr \
+       maitham@ube:~/train_lqr/
+   
+   This will transfer all code and the training_data.h5 file (~14 GB).
+   Transfer time: ~5-10 minutes depending on network speed.
+
+
+2. INSTALL JAX ON SERVER
+   ----------------------
+   SSH into server:
+   
+   ssh maitham@ube
+   cd ~/train_lqr/universal_lqr
+   
+   Install JAX with CUDA support:
+   
+   pip3 install --upgrade pip
+   pip3 install -r requirements_jax.txt
+   
+   Verify JAX can see GPUs:
+   
+   python3 -c "import jax; print('Devices:', jax.devices())"
+   
+   Expected output:
+   Devices: [cuda(id=0), cuda(id=1), cuda(id=2)]
+
+
+3. RUN TRAINING
+   ------------
+   python3 train_jax.py
+   
+   Expected output:
+   - JAX devices: 3 GPUs detected
+   - Train size: 4,354,612 sequences (95%)
+   - Test size: 229,190 sequences (5%)
+   - Model parameters: ~5M
+   - Speed: 5-10 minutes per epoch
+   - Total time: ~2.5-5 hours for 30 epochs
+
+
+4. MONITOR TRAINING
+   ----------------
+   Open another terminal and SSH to server:
+   
+   ssh maitham@ube
+   watch -n 1 nvidia-smi
+   
+   You should see all 3 GPUs at 90-100% utilization.
+
+
+5. EVALUATE/TEST THE MODEL
+   -----------------------
+   After training completes, test the model:
+   
+   python3 test_jax.py
+   
+   This will:
+   - Load the trained model (best_model_jax.pkl)
+   - Test on 10 diverse systems
+   - Compare transformer vs LQR performance
+   - Generate comparison plots in test_results/
+   
+   Expected output:
+   - Performance ratios (1.0 = same as LQR, <2.0 = good)
+   - Visual comparisons for each system
+   - Overall statistics
+
+
+6. RESULTS
+   -------
+   After training, models are saved in:
+   
+   ~/train_lqr/universal_lqr/models/
+   ├── best_model_jax.pkl          # Best model (lowest test loss)
+   ├── checkpoint_epoch_5_jax.pkl  # Checkpoint at epoch 5
+   ├── checkpoint_epoch_10_jax.pkl
+   ...
+   └── training_history_jax.json   # Loss curves
+   
+   After testing, results are in:
+   
+   ~/train_lqr/universal_lqr/test_results/
+   ├── CartPole_comparison.png
+   ├── TwoLinkArm_comparison.png
+   └── ...
+
+
+7. IF DATA GENERATION IS NEEDED
+   -----------------------------
+   If you need to regenerate data on the server:
+   
+   python3 data_generation.py
+   
+   This will create data/training_data.h5 (~14 GB, takes 30-60 minutes).
+   Then run train_jax.py.
+
+
+8. ADJUSTING HYPERPARAMETERS
+   --------------------------
+   Edit config.py to adjust:
+   
+   - SEQUENCE_STRIDE: 1, 8, 16, or 32 (affects dataset size)
+     * 1 = 72M sequences (comprehensive but slow)
+     * 16 = 4.5M sequences (balanced)
+     * 32 = 2.3M sequences (fast)
+   - TRAINING_CONFIG['batch_size']: 512, 1024, or 2048
+   - TRAINING_CONFIG['num_epochs']: 20, 30, or 50
+   - TRANSFORMER_CONFIG['d_model']: 128, 256, or 512
+
+
+9. TROUBLESHOOTING
+   ---------------
+   Q: "CUDA out of memory"
+   A: Reduce batch_size in config.py to 512 or 256
+   
+   Q: "Too slow"
+   A: Increase SEQUENCE_STRIDE to 32 in config.py, regenerate data
+   
+   Q: "JAX not finding GPUs"
+   A: Check CUDA installation: nvcc --version
+      Reinstall JAX with correct CUDA version
+   
+   Q: "Training loss not decreasing"
+   A: Check data quality, try increasing learning_rate to 5e-4
+

@@ -5,15 +5,18 @@ Data Generation Pipeline for Universal LQR Transformer
 import numpy as np
 import os
 import pickle
+import h5py
 from tqdm import tqdm
 import sys
 
 from config import (
     SAVE_NEW_DATA, NUM_TRAJECTORIES_PER_VARIANT, TIME_HORIZON, DT,
     NUM_VARIANTS_PER_SYSTEM, PARAMETER_UNCERTAINTY, PROCESS_NOISE_STD,
-    DATA_DIR, RANDOM_SEED
+    DATA_DIR, RANDOM_SEED, SEQUENCE_LENGTH, MAX_STATE_DIM, MAX_INPUT_DIM,
+    DIMENSION_ENCODING_SIZE
 )
 from lqr_controller import design_lqr, simulate_lqr_controlled_system
+from data_utils import create_dimension_encoding
 from systems import *
 
 
@@ -242,6 +245,7 @@ def generate_dataset_for_system(system_class, variant_idx, num_trajectories, ver
 def generate_all_data(save_dir=DATA_DIR):
     """
     Generate data for all systems and variants.
+    Saves sequences directly in transformer-ready format (HDF5).
     
     Args:
         save_dir: Directory to save data
@@ -252,52 +256,235 @@ def generate_all_data(save_dir=DATA_DIR):
     # Get all system classes
     system_classes = get_all_system_classes()
     
-    print(f"Generating data for {len(system_classes)} system families")
-    print(f"  - {NUM_VARIANTS_PER_SYSTEM} variants per family")
-    print(f"  - {NUM_TRAJECTORIES_PER_VARIANT} trajectories per variant")
-    print(f"  - Time horizon: {TIME_HORIZON}s, dt: {DT}s")
-    print(f"  - Parameter uncertainty: ±{PARAMETER_UNCERTAINTY*100}%")
-    print(f"  - Process noise std: {PROCESS_NOISE_STD}")
+    print("="*70)
+    print("GENERATING TRANSFORMER-READY DATA")
+    print("="*70)
+    print(f"System families: {len(system_classes)}")
+    print(f"Variants per family: {NUM_VARIANTS_PER_SYSTEM}")
+    print(f"Trajectories per variant: {NUM_TRAJECTORIES_PER_VARIANT}")
+    print(f"Sequence length: {SEQUENCE_LENGTH}")
+    print(f"Time horizon: {TIME_HORIZON}s, dt: {DT}s")
+    print(f"Parameter uncertainty: ±{PARAMETER_UNCERTAINTY*100}%")
+    print(f"Process noise std: {PROCESS_NOISE_STD}")
     print()
     
-    all_data = []
-    failed_systems = []
+    # First pass: count total sequences for HDF5 allocation
+    print("Step 1/3: Counting total sequences...")
+    total_sequences = 0
+    system_metadata = []
     
-    for system_class in tqdm(system_classes, desc="System families"):
-        print(f"\nGenerating data for: {system_class.__name__}")
-        
+    for system_class in tqdm(system_classes, desc="Counting"):
         for variant_idx in range(NUM_VARIANTS_PER_SYSTEM):
-            data = generate_dataset_for_system(
-                system_class, 
-                variant_idx, 
-                NUM_TRAJECTORIES_PER_VARIANT,
-                verbose=(variant_idx == 0)  # Only print for first variant
-            )
+            # Estimate sequences per trajectory (approximate)
+            steps_per_traj = int(TIME_HORIZON / DT)
+            n_sequences_per_traj = max(0, steps_per_traj - SEQUENCE_LENGTH)
+            estimated_sequences = NUM_TRAJECTORIES_PER_VARIANT * n_sequences_per_traj
             
-            if data is not None:
-                all_data.append(data)
-            else:
+            system_metadata.append({
+                'system_class': system_class,
+                'variant_idx': variant_idx,
+                'estimated_sequences': estimated_sequences
+            })
+            total_sequences += estimated_sequences
+    
+    print(f"Estimated total sequences: {total_sequences:,}")
+    print(f"Estimated file size: ~{total_sequences * SEQUENCE_LENGTH * (MAX_STATE_DIM + DIMENSION_ENCODING_SIZE) * 4 / (1024**3):.1f} GB")
+    
+    # Step 2: Compute normalization statistics on a sample
+    print("\nStep 2/3: Computing normalization statistics...")
+    print("(Generating sample trajectories...)")
+    
+    sample_states = []
+    sample_controls = []
+    n_sample_systems = min(10, len(system_metadata))
+    
+    for i in range(n_sample_systems):
+        meta = system_metadata[i * len(system_metadata) // n_sample_systems]
+        system = meta['system_class']()
+        K, success = design_and_verify_lqr(system, verbose=False)
+        
+        if success:
+            t, X, U = generate_trajectory(system, K, trajectory_idx=i)
+            if t is not None:
+                sample_states.append(X[:, :system.n_states])
+                sample_controls.append(U[:, :system.n_inputs])
+    
+    # Compute global statistics
+    state_mean = np.zeros(MAX_STATE_DIM)
+    state_std = np.ones(MAX_STATE_DIM)
+    control_mean = np.zeros(MAX_INPUT_DIM)
+    control_std = np.ones(MAX_INPUT_DIM)
+    
+    for dim in range(MAX_STATE_DIM):
+        all_vals = []
+        for states in sample_states:
+            if states.shape[1] > dim:
+                all_vals.extend(states[:, dim])
+        if len(all_vals) > 0:
+            state_mean[dim] = np.mean(all_vals)
+            state_std[dim] = np.std(all_vals) + 1e-8
+    
+    for dim in range(MAX_INPUT_DIM):
+        all_vals = []
+        for controls in sample_controls:
+            if controls.shape[1] > dim:
+                all_vals.extend(controls[:, dim])
+        if len(all_vals) > 0:
+            control_mean[dim] = np.mean(all_vals)
+            control_std[dim] = np.std(all_vals) + 1e-8
+    
+    print("Statistics computed.")
+    
+    # Step 3: Generate and save all sequences
+    print("\nStep 3/3: Generating and saving sequences...")
+    
+    h5_file = os.path.join(save_dir, 'training_data.h5')
+    
+    with h5py.File(h5_file, 'w') as hf:
+        # Create datasets (with estimated size + 10% buffer)
+        buffer_size = int(total_sequences * 1.1)
+        
+        input_sequences = hf.create_dataset(
+            'input_sequences',
+            shape=(buffer_size, SEQUENCE_LENGTH, MAX_STATE_DIM + DIMENSION_ENCODING_SIZE),
+            dtype='float32',
+            chunks=(1024, SEQUENCE_LENGTH, MAX_STATE_DIM + DIMENSION_ENCODING_SIZE),
+            compression='lzf'
+        )
+        
+        controls = hf.create_dataset(
+            'controls',
+            shape=(buffer_size, MAX_INPUT_DIM),
+            dtype='float32',
+            chunks=(1024, MAX_INPUT_DIM),
+            compression='lzf'
+        )
+        
+        control_masks = hf.create_dataset(
+            'control_masks',
+            shape=(buffer_size, MAX_INPUT_DIM),
+            dtype='float32',
+            chunks=(1024, MAX_INPUT_DIM),
+            compression='lzf'
+        )
+        
+        # Store normalization stats
+        hf.create_dataset('state_mean', data=state_mean)
+        hf.create_dataset('state_std', data=state_std)
+        hf.create_dataset('control_mean', data=control_mean)
+        hf.create_dataset('control_std', data=control_std)
+        
+        # Generate and save sequences
+        seq_idx = 0
+        batch_size = 10000
+        input_batch, control_batch, mask_batch = [], [], []
+        failed_systems = []
+        
+        for meta in tqdm(system_metadata, desc="Generating data"):
+            system_class = meta['system_class']
+            variant_idx = meta['variant_idx']
+            
+            # Create system variant
+            nominal_system = system_class()
+            variant_params = nominal_system.generate_variant_params(PARAMETER_UNCERTAINTY)
+            system = system_class(params=variant_params)
+            
+            # Design LQR
+            K, success = design_and_verify_lqr(system, verbose=False)
+            if not success:
                 failed_systems.append((system_class.__name__, variant_idx))
+                continue
+            
+            # Create dimension encoding once
+            dim_encoding = create_dimension_encoding(system.n_inputs, system.n_states)
+            if hasattr(dim_encoding, 'numpy'):
+                dim_encoding = dim_encoding.numpy()
+            dim_encoding_repeated = np.tile(dim_encoding, (SEQUENCE_LENGTH, 1))
+            
+            # Control mask
+            control_mask = np.zeros(MAX_INPUT_DIM, dtype=np.float32)
+            control_mask[:system.n_inputs] = 1.0
+            
+            # Generate trajectories
+            for traj_idx in range(NUM_TRAJECTORIES_PER_VARIANT):
+                t, X, U = generate_trajectory(system, K, 
+                                              trajectory_idx=variant_idx*1000 + traj_idx)
+                
+                if t is None:
+                    continue  # Skip invalid trajectories
+                
+                # Extract all sequences from this trajectory
+                traj_len = len(t)
+                n_sequences = traj_len - SEQUENCE_LENGTH
+                
+                for seq_start in range(n_sequences):
+                    # Extract and normalize states
+                    states = X[seq_start:seq_start + SEQUENCE_LENGTH, :].copy()
+                    states[:, :system.n_states] = (states[:, :system.n_states] - state_mean[:system.n_states]) / state_std[:system.n_states]
+                    
+                    # Pad states
+                    states_padded = np.zeros((SEQUENCE_LENGTH, MAX_STATE_DIM), dtype=np.float32)
+                    states_padded[:, :system.n_states] = states
+                    
+                    # Concatenate with dimension encoding
+                    input_seq = np.concatenate([states_padded, dim_encoding_repeated], axis=1)
+                    
+                    # Extract and normalize control
+                    control = U[seq_start + SEQUENCE_LENGTH, :].copy()
+                    control[:system.n_inputs] = (control[:system.n_inputs] - control_mean[:system.n_inputs]) / control_std[:system.n_inputs]
+                    
+                    # Pad control
+                    control_padded = np.zeros(MAX_INPUT_DIM, dtype=np.float32)
+                    control_padded[:system.n_inputs] = control
+                    
+                    # Add to batch
+                    input_batch.append(input_seq)
+                    control_batch.append(control_padded)
+                    mask_batch.append(control_mask)
+                    
+                    # Write batch when full
+                    if len(input_batch) >= batch_size:
+                        batch_end = seq_idx + len(input_batch)
+                        input_sequences[seq_idx:batch_end] = np.array(input_batch)
+                        controls[seq_idx:batch_end] = np.array(control_batch)
+                        control_masks[seq_idx:batch_end] = np.array(mask_batch)
+                        
+                        seq_idx = batch_end
+                        input_batch, control_batch, mask_batch = [], [], []
+        
+        # Write remaining batch
+        if len(input_batch) > 0:
+            batch_end = seq_idx + len(input_batch)
+            input_sequences[seq_idx:batch_end] = np.array(input_batch)
+            controls[seq_idx:batch_end] = np.array(control_batch)
+            control_masks[seq_idx:batch_end] = np.array(mask_batch)
+            seq_idx = batch_end
+        
+        # Resize datasets to actual size
+        input_sequences.resize((seq_idx, SEQUENCE_LENGTH, MAX_STATE_DIM + DIMENSION_ENCODING_SIZE))
+        controls.resize((seq_idx, MAX_INPUT_DIM))
+        control_masks.resize((seq_idx, MAX_INPUT_DIM))
+        
+        # Store metadata
+        hf.attrs['total_sequences'] = seq_idx
+        hf.attrs['sequence_length'] = SEQUENCE_LENGTH
+        hf.attrs['max_state_dim'] = MAX_STATE_DIM
+        hf.attrs['max_input_dim'] = MAX_INPUT_DIM
     
-    # Save data
-    data_file = os.path.join(save_dir, 'lqr_training_data.pkl')
-    with open(data_file, 'wb') as f:
-        pickle.dump(all_data, f)
-    
-    print(f"\n{'='*60}")
-    print(f"Data generation complete!")
-    print(f"  - Total system variants: {len(all_data)}")
-    print(f"  - Total trajectories: {len(all_data) * NUM_TRAJECTORIES_PER_VARIANT}")
-    print(f"  - Failed systems: {len(failed_systems)}")
-    print(f"  - Data saved to: {data_file}")
-    print(f"{'='*60}")
+    print(f"\n{'='*70}")
+    print("DATA GENERATION COMPLETE!")
+    print(f"Total sequences saved: {seq_idx:,}")
+    print(f"Failed systems: {len(failed_systems)}")
+    print(f"File: {h5_file}")
+    print(f"Size: {os.path.getsize(h5_file) / (1024**3):.2f} GB")
+    print("="*70)
     
     if failed_systems:
         print("\nFailed systems:")
         for name, idx in failed_systems:
             print(f"  - {name}, variant {idx}")
     
-    return all_data
+    return seq_idx
 
 
 def load_data(data_dir=DATA_DIR):
