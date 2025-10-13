@@ -77,7 +77,7 @@ TRANSFORMER_CONFIG = {
 # ============================================================================
 
 TRAINING_CONFIG = {
-    'batch_size': 256,  # CPU-optimized batch size (use 2048 for GPU)
+    'batch_size': 1024,  # CPU-optimized batch size (use 2048 for GPU)
     'learning_rate': 3e-4,  # AdamW learning rate
     'num_epochs': 50,  # More epochs for larger dataset
     'warmup_steps': 2000,
