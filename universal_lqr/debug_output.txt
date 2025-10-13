@@ -1,0 +1,51 @@
+======================================================================
+======================= FAST CPU CONFIG LOADED =======================
+======================================================================
+Model size: ~40k parameters (vs 200k in normal config)
+Layers: 2 (vs 4)
+d_model: 32 (vs 64)
+Epochs: 20 (vs 50)
+Expected training time: ~12-20 hours
+======================================================================
+================================================================================
+==================== JAX Universal LQR Transformer Training ====================
+================================================================================
+
+================================================================================
+DEVICE CONFIGURATION
+================================================================================
+Available devices: 1
+Device type: cpu
+Device: TFRT_CPU_0
+Backend: cpu
+⚠ Using CPU (slower training expected)
+
+
+Loading data...
+  Training batches: 142431
+  Validation batches: 25134
+  Sequences per epoch: 72,924,672
+  Normalization stats saved: ./models/normalization_stats_jax.pkl
+
+Initializing model...
+Model parameters: 30,086
+
+Training Configuration:
+  Epochs: 20
+  Batch size: 512
+  Learning rate: 0.0003
+  Warmup steps: 1000
+  Weight decay: 0.0001
+  Gradient clip: 1.0
+
+================================================================================
+STARTING TRAINING (Memory-efficient streaming from HDF5)
+================================================================================
+Note: Data is streamed in batches, never loading full dataset into RAM
+
+
+================================================================================
+DEBUG: Starting Epoch 1
+================================================================================
+Epoch 1 [Train]:   0%|          | 0/142431 [00:00<?, ?it/s]Epoch 1 [Train]:   0%|          | 0/142431 [00:16<?, ?it/s]Epoch 1 [Train]:   0%|          | 1/142431 [00:16<666:25:27, 16.84s/it]Epoch 1 [Train]:   0%|          | 1/142431 [00:32<666:25:27, 16.84s/it]Epoch 1 [Train]:   0%|          | 2/142431 [00:32<636:28:36, 16.09s/it]Epoch 1 [Train]:   0%|          | 2/142431 [00:46<636:28:36, 16.09s/it]Epoch 1 [Train]:   0%|          | 3/142431 [00:46<597:14:27, 15.10s/it]Epoch 1 [Train]:   0%|          | 3/142431 [01:00<597:14:27, 15.10s/it]Epoch 1 [Train]:   0%|          | 4/142431 [01:00<577:45:51, 14.60s/it]Epoch 1 [Train]:   0%|          | 4/142431 [01:14<577:45:51, 14.60s/it]Epoch 1 [Train]:   0%|          | 5/142431 [01:14<572:41:01, 14.48s/it]Epoch 1 [Train]:   0%|          | 5/142431 [01:28<572:41:01, 14.48s/it]Epoch 1 [Train]:   0%|          | 6/142431 [01:28<561:41:31, 14.20s/it]Epoch 1 [Train]:   0%|          | 6/142431 [01:42<561:41:31, 14.20s/it]Epoch 1 [Train]:   0%|          | 7/142431 [01:42<559:04:00, 14.13s/it]Epoch 1 [Train]:   0%|          | 7/142431 [01:55<559:04:00, 14.13s/it]Epoch 1 [Train]:   0%|          | 8/142431 [01:55<554:19:01, 14.01s/it]Epoch 1 [Train]:   0%|          | 8/142431 [02:09<554:19:01, 14.01s/it]Epoch 1 [Train]:   0%|          | 9/142431 [02:09<551:20:52, 13.94s/it]Epoch 1 [Train]:   0%|          | 9/142431 [02:23<551:20:52, 13.94s/it]Epoch 1 [Train]:   0%|          | 10/142431 [02:23<549:09:31, 13.88s/it]Epoch 1 [Train]:   0%|          | 10/142431 [02:37<549:09:31, 13.88s/it]Epoch 1 [Train]:   0%|          | 11/142431 [02:37<550:35:24, 13.92s/it]Epoch 1 [Train]:   0%|          | 11/142431 [02:51<550:35:24, 13.92s/it]Epoch 1 [Train]:   0%|          | 12/142431 [02:51<548:13:06, 13.86s/it]Epoch 1 [Train]:   0%|          | 12/142431 [03:04<548:13:06, 13.86s/it]Epoch 1 [Train]:   0%|          | 13/142431 [03:04<547:01:17, 13.83s/it]Epoch 1 [Train]:   0%|          | 13/142431 [03:18<547:01:17, 13.83s/it]Epoch 1 [Train]:   0%|          | 14/142431 [03:18<546:51:43, 13.82s/it]Epoch 1 [Train]:   0%|          | 14/142431 [03:32<546:51:43, 13.82s/it]Epoch 1 [Train]:   0%|          | 15/142431 [03:32<547:54:53, 13.85s/it]/opt/anaconda3/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '

@@ -2,6 +2,7 @@
 Electrical LTI Systems
 """
 
+import jax.numpy as jnp
 import numpy as np
 from .base_system import LTISystem
 
@@ -27,29 +28,29 @@ class DCMotor(LTISystem):
         J, b, Kt, Ke, R, L = (self.params['J'], self.params['b'], self.params['Kt'],
                                self.params['Ke'], self.params['R'], self.params['L'])
         
-        A = np.array([
+        A = jnp.array([
             [0, 1, 0],
             [0, -b/J, Kt/J],
             [0, -Ke/L, -R/L]
         ])
-        B = np.array([[0], [0], [1/L]])
+        B = jnp.array([[0], [0], [1/L]])
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([10.0, 1.0, 0.1])
-        R = np.array([[0.1]])
+        Q = jnp.diag(jnp.array([10.0, 1.0, 0.1]))
+        R = jnp.array([[1.0]])
         return Q, R
     
     def sample_initial_condition(self):
         # DC Motor: multiple rotations, typical speeds, current ±2A
         return np.array([
-            np.random.uniform(-2*np.pi, 2*np.pi),  # theta (rad) - multiple turns
+            np.random.uniform(-2*jnp.pi, 2*jnp.pi),  # theta (rad) - multiple turns
             np.random.uniform(-10.0, 10.0),        # omega (rad/s) - realistic motor speed
             np.random.uniform(-2.0, 2.0)           # current (A)
         ])
     
     def get_typical_state_magnitude(self):
-        return np.array([1.0, 2.0, 0.5])
+        return jnp.array([1.0, 2.0, 0.5])
 
 
 class ACMotor(LTISystem):
@@ -78,12 +79,12 @@ class ACMotor(LTISystem):
         # Linearized around operating point
         omega_0 = 10  # nominal speed (rad/s) - much reduced
         
-        A = np.array([
+        A = jnp.array([
             [-Rs/Ld, omega_0*Lq/Ld, 0],
             [-omega_0*Ld/Lq, -Rs/Lq, -p*lm/Lq],
             [0, 0.5*p*lm/J, -B/J]  # Reduced coupling
         ])
-        B = np.array([
+        B = jnp.array([
             [1/Ld, 0],
             [0, 1/Lq],
             [0, 0]
@@ -91,8 +92,8 @@ class ACMotor(LTISystem):
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([10.0, 10.0, 50.0])  # Higher penalties
-        R = np.diag([10.0, 10.0])  # Much higher R
+        Q = jnp.diag(jnp.array([10.0, 10.0, 50.0]))  # Higher penalties
+        R = jnp.diag(jnp.array([100.0, 100.0]))  # Much higher R
         return Q, R
     
     def sample_initial_condition(self):
@@ -126,16 +127,16 @@ class BuckConverter(LTISystem):
         ESR_L = 1.0  # Equivalent series resistance in inductor
         ESR_C = 0.1  # Equivalent series resistance in capacitor
         
-        A = np.array([
+        A = jnp.array([
             [-ESR_L/L, -1/L],  # Added ESR
             [1/C, -(1/(R*C) + ESR_C/C)]  # Added ESR
         ])
-        B = np.array([[Vin/L], [0]])
+        B = jnp.array([[Vin/L], [0]])
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([1.0, 1000.0])  # Very high voltage penalty
-        R = np.array([[500.0]])  # Much much higher R
+        Q = jnp.diag(jnp.array([1.0, 1000.0]))  # Very high voltage penalty
+        R = jnp.array([[500.0]])  # Much much higher R
         return Q, R
     
     def sample_initial_condition(self):
@@ -145,7 +146,7 @@ class BuckConverter(LTISystem):
         ])
     
     def get_typical_state_magnitude(self):
-        return np.array([0.5, 2.0])
+        return jnp.array([0.5, 2.0])
 
 
 class BoostConverter(LTISystem):
@@ -171,16 +172,16 @@ class BoostConverter(LTISystem):
         ESR_L = 1.0
         ESR_C = 0.1
         
-        A = np.array([
+        A = jnp.array([
             [-ESR_L/L, -(1-D)/L],  # Added ESR
             [(1-D)/C, -(1/(R*C) + ESR_C/C)]  # Added ESR
         ])
-        B = np.array([[-Vin/L], [Vin/(R*C)]])
+        B = jnp.array([[-Vin/L], [Vin/(R*C)]])
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([1.0, 1000.0])  # Higher voltage penalty
-        R = np.array([[500.0]])  # Much much higher R
+        Q = jnp.diag(jnp.array([1.0, 1000.0]))  # Higher voltage penalty
+        R = jnp.array([[500.0]])  # Much much higher R
         return Q, R
     
     def sample_initial_condition(self):
@@ -213,16 +214,16 @@ class BuckBoostConverter(LTISystem):
         ESR_L = 1.0
         ESR_C = 0.1
         
-        A = np.array([
+        A = jnp.array([
             [-ESR_L/L, -(1-D)/L],  # Added ESR
             [(1-D)/C, -(1/(R*C) + ESR_C/C)]  # Added ESR
         ])
-        B = np.array([[D*Vin/L], [-Vin/(R*C)]])
+        B = jnp.array([[D*Vin/L], [-Vin/(R*C)]])
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([1.0, 1000.0])  # Higher voltage penalty
-        R = np.array([[500.0]])  # Much much higher R
+        Q = jnp.diag(jnp.array([1.0, 1000.0]))  # Higher voltage penalty
+        R = jnp.array([[500.0]])  # Much much higher R
         return Q, R
     
     def sample_initial_condition(self):
@@ -250,13 +251,13 @@ class Inverter(LTISystem):
     def get_matrices(self):
         L, C, R, omega = self.params['L'], self.params['C'], self.params['R'], self.params['omega']
         
-        A = np.array([
+        A = jnp.array([
             [-R/L, omega, -1/L, 0],
             [-omega, -R/L, 0, -1/L],
             [1/C, 0, -0.1/C, omega],  # Added damping
             [0, 1/C, -omega, -0.1/C]   # Added damping
         ])
-        B = np.array([
+        B = jnp.array([
             [1/L, 0],
             [0, 1/L],
             [0, 0],
@@ -265,8 +266,8 @@ class Inverter(LTISystem):
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([10.0, 10.0, 100.0, 100.0])  # Higher voltage penalties
-        R = np.diag([10.0, 10.0])  # Much higher R
+        Q = jnp.diag(jnp.array([10.0, 10.0, 100.0, 100.0]))  # Higher voltage penalties
+        R = jnp.diag(jnp.array([10.0, 10.0]))  # Much higher R
         return Q, R
     
     def sample_initial_condition(self):
@@ -295,16 +296,16 @@ class RLCCircuitSeries(LTISystem):
     def get_matrices(self):
         R, L, C = self.params['R'], self.params['L'], self.params['C']
         
-        A = np.array([
+        A = jnp.array([
             [0, 1/C],
             [-1/L, -R/L]
         ])
-        B = np.array([[0], [1/L]])
+        B = jnp.array([[0], [1/L]])
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([100.0, 10.0])  # Higher penalties
-        R = np.array([[10.0]])  # Much higher R
+        Q = jnp.diag(jnp.array([100.0, 10.0]))  # Higher penalties
+        R = jnp.array([[10.0]])  # Much higher R
         return Q, R
     
     def sample_initial_condition(self):
@@ -335,16 +336,16 @@ class RLCCircuitParallel(LTISystem):
         R_series_L = 2.0  # Series resistance in inductor
         R_series_C = 0.5  # Series resistance in capacitor
         
-        A = np.array([
+        A = jnp.array([
             [-(R/L + R_series_L/L), -1/L],  # Added series resistance
             [1/C, -(1/(R*C) + R_series_C/C)]  # Added series resistance
         ])
-        B = np.array([[0], [1/C]])
+        B = jnp.array([[0], [1/C]])
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([10.0, 100.0])  # Higher penalties
-        R = np.array([[100.0]])  # Much much higher R
+        Q = jnp.diag(jnp.array([10.0, 100.0]))  # Higher penalties
+        R = jnp.array([[100.0]])  # Much much higher R
         return Q, R
     
     def sample_initial_condition(self):

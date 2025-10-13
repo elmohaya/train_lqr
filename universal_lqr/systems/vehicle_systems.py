@@ -2,6 +2,7 @@
 Vehicle LTI Systems
 """
 
+import jax.numpy as jnp
 import numpy as np
 from .base_system import LTISystem
 
@@ -30,18 +31,18 @@ class VehicleLateralDynamics(LTISystem):
                                       self.params['Cf'], self.params['Cr'], 
                                       self.params['Vx'])
         
-        A = np.array([
+        A = jnp.array([
             [-(Cf+Cr)/(m*Vx), -(Cf*lf-Cr*lr)/(m*Vx)-Vx, 0, 0],
             [-(Cf*lf-Cr*lr)/(Iz*Vx), -(Cf*lf**2+Cr*lr**2)/(Iz*Vx), 0, 0],
             [1, 0, -0.01, Vx],  # Added small damping
             [0, 1, 0, -0.01]     # Added small damping
         ])
-        B = np.array([[Cf/m], [Cf*lf/Iz], [0], [0]])
+        B = jnp.array([[Cf/m], [Cf*lf/Iz], [0], [0]])
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([10.0, 20.0, 100.0, 50.0])  # Much higher penalties on position/heading
-        R = np.array([[10.0]])  # Much higher R
+        Q = jnp.diag(jnp.array([10.0, 20.0, 100.0, 50.0]))  # Much higher penalties on position/heading
+        R = jnp.array([[100.0]])  # Much higher R
         return Q, R
     
     def sample_initial_condition(self):
@@ -80,16 +81,16 @@ class LongitudinalCruiseControl(LTISystem):
         v0 = 15.0
         drag_coeff = 0.5 * Cd * A * rho
         
-        A_mat = np.array([
+        A_mat = jnp.array([
             [0, 1],
             [0, -2*drag_coeff*v0/m - Cr*g - 0.5]  # Added extra damping
         ])
-        B_mat = np.array([[0], [1/m]])
+        B_mat = jnp.array([[0], [1/m]])
         return A_mat, B_mat
     
     def get_default_lqr_weights(self):
-        Q = np.diag([10.0, 100.0])  # Much higher penalties
-        R = np.array([[1.0]])  # Higher R
+        Q = jnp.diag(jnp.array([10.0, 100.0]))  # Much higher penalties
+        R = jnp.array([[10.0]])  # Higher R
         return Q, R
     
     def sample_initial_condition(self):
@@ -120,7 +121,7 @@ class PlatooningModel(LTISystem):
         k_v = self.params['k_v']
         
         # Each vehicle follows the one ahead
-        A = np.array([
+        A = jnp.array([
             [0, 1, 0, 0, 0, 0],
             [0, -1/tau, 0, 0, 0, 0],
             [0, 0, 0, 1, 0, 0],
@@ -128,7 +129,7 @@ class PlatooningModel(LTISystem):
             [0, 0, 0, 0, 0, 1],
             [0, 0, k_p/tau, k_v/tau, 0, -1/tau]
         ])
-        B = np.array([
+        B = jnp.array([
             [0, 0, 0],
             [1, 0, 0],
             [0, 0, 0],
@@ -139,8 +140,8 @@ class PlatooningModel(LTISystem):
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([10.0, 1.0, 10.0, 1.0, 10.0, 1.0])
-        R = np.diag([0.1, 0.1, 0.1])
+        Q = jnp.diag(jnp.array([10.0, 1.0, 10.0, 1.0, 10.0, 1.0]))
+        R = jnp.diag(jnp.array([1.0, 1.0, 1.0]))
         return Q, R
     
     def sample_initial_condition(self):

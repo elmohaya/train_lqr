@@ -1,19 +1,21 @@
 """
-Base class for LTI systems
+Base class for LTI systems (JAX version)
+Matrices use JAX arrays for computation, but IC sampling uses numpy (simpler, not performance-critical)
 """
 
+import jax.numpy as jnp
 import numpy as np
 from abc import ABC, abstractmethod
 
 
 class LTISystem(ABC):
     """
-    Base class for Linear Time-Invariant systems.
+    Base class for Linear Time-Invariant systems (JAX implementation).
     
     All systems should inherit from this class and implement:
-    - get_matrices(): Returns A, B matrices
-    - get_default_lqr_weights(): Returns Q, R weights
-    - sample_initial_condition(): Returns random initial state
+    - get_matrices(): Returns A, B matrices (JAX arrays)
+    - get_default_lqr_weights(): Returns Q, R weights (JAX arrays)
+    - sample_initial_condition(): Returns random initial state (numpy array, converted to JAX when needed)
     """
     
     def __init__(self, params=None):
@@ -40,8 +42,8 @@ class LTISystem(ABC):
         Return the state-space matrices A and B.
         
         Returns:
-            A: State matrix (n x n)
-            B: Input matrix (n x m)
+            A: State matrix (n x n) - JAX array
+            B: Input matrix (n x m) - JAX array
         """
         pass
     
@@ -51,8 +53,8 @@ class LTISystem(ABC):
         Return default LQR weight matrices Q and R.
         
         Returns:
-            Q: State cost matrix (n x n)
-            R: Input cost matrix (m x m)
+            Q: State cost matrix (n x n) - JAX array
+            R: Input cost matrix (m x m) - JAX array
         """
         pass
     
@@ -62,7 +64,7 @@ class LTISystem(ABC):
         Sample a random initial condition.
         
         Returns:
-            x0: Initial state vector (n,)
+            x0: Initial state vector (n,) - numpy array
         """
         pass
     
@@ -92,10 +94,10 @@ class LTISystem(ABC):
         This should be overridden by specific systems if needed.
         
         Returns:
-            magnitude: Array of typical magnitudes for each state
+            magnitude: Array of typical magnitudes for each state - JAX array
         """
         # Default: use unit magnitude, can be overridden
-        return np.ones(self.n_states)
+        return jnp.ones(self.n_states)
     
     def __str__(self):
         return f"{self.name}(n_states={self.n_states}, n_inputs={self.n_inputs})"

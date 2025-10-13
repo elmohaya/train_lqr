@@ -2,6 +2,7 @@
 Aerospace LTI Systems
 """
 
+import jax.numpy as jnp
 import numpy as np
 from .base_system import LTISystem
 
@@ -30,36 +31,36 @@ class QuadrotorHover(LTISystem):
         Ix, Iy, Iz = self.params['Ix'], self.params['Iy'], self.params['Iz']
         
         # 12-state model with damping
-        A = np.zeros((12, 12))
+        A = jnp.zeros((12, 12))
         # Position derivatives
-        A[0:3, 6:9] = np.eye(3)
+        A = A.at[0:3, 6:9].set(jnp.eye(3))
         # Velocity from angles (small angle approximation) with damping
-        A[6, 4] = g   # x_ddot from theta
-        A[6, 6] = -0.5  # air drag
-        A[7, 3] = -g  # y_ddot from phi
-        A[7, 7] = -0.5  # air drag
-        A[8, 8] = -0.5  # air drag
+        A = A.at[6, 4].set(g)   # x_ddot from theta
+        A = A.at[6, 6].set(-0.5)  # air drag
+        A = A.at[7, 3].set(-g)  # y_ddot from phi
+        A = A.at[7, 7].set(-0.5)  # air drag
+        A = A.at[8, 8].set(-0.5)  # air drag
         # Attitude derivatives
-        A[3:6, 9:12] = np.eye(3)
+        A = A.at[3:6, 9:12].set(jnp.eye(3))
         # Angular damping
-        A[9, 9] = -0.1
-        A[10, 10] = -0.1
-        A[11, 11] = -0.1
+        A = A.at[9, 9].set(-0.1)
+        A = A.at[10, 10].set(-0.1)
+        A = A.at[11, 11].set(-0.1)
         
-        B = np.zeros((12, 4))
-        B[8, 0] = 1/m  # z acceleration from thrust
-        B[9, 1] = 1/Ix  # roll acceleration from tau_phi
-        B[10, 2] = 1/Iy  # pitch acceleration from tau_theta
-        B[11, 3] = 1/Iz  # yaw acceleration from tau_psi
+        B = jnp.zeros((12, 4))
+        B = B.at[8, 0].set(1/m)  # z acceleration from thrust
+        B = B.at[9, 1].set(1/Ix)  # roll acceleration from tau_phi
+        B = B.at[10, 2].set(1/Iy)  # pitch acceleration from tau_theta
+        B = B.at[11, 3].set(1/Iz)  # yaw acceleration from tau_psi
         
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([20.0, 20.0, 50.0,  # position - higher
+        Q = jnp.diag(jnp.array([20.0, 20.0, 50.0,  # position - higher
                      100.0, 100.0, 20.0,  # attitude - much higher
                      2.0, 2.0, 5.0,       # linear velocity
-                     10.0, 10.0, 2.0])    # angular velocity
-        R = np.diag([1.0, 1.0, 1.0, 1.0])  # Much higher R
+                     10.0, 10.0, 2.0]))    # angular velocity
+        R = jnp.diag(jnp.array([10.0, 10.0, 10.0, 10.0]))  # Much higher R
         return Q, R
     
     def sample_initial_condition(self):
@@ -105,7 +106,7 @@ class FixedWingAircraft(LTISystem):
         p = self.params
         g, U0 = p['g'], p['U0']
         
-        A = np.array([
+        A = jnp.array([
             [p['Xu'], p['Xw'], 0, -g],
             [p['Zu'], p['Zw'], U0+p['Zq'], 0],
             [p['Mu'], p['Mw'], p['Mq'], 0],
@@ -113,7 +114,7 @@ class FixedWingAircraft(LTISystem):
         ])
         
         # Control derivatives (elevator) - reduced
-        B = np.array([
+        B = jnp.array([
             [0.05],    # Xde - reduced
             [-2.0],    # Zde - reduced
             [-5.0],    # Mde - reduced
@@ -122,8 +123,8 @@ class FixedWingAircraft(LTISystem):
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([10.0, 20.0, 50.0, 100.0])  # Much higher penalties
-        R = np.array([[10.0]])  # Much higher R
+        Q = jnp.diag(jnp.array([10.0, 20.0, 50.0, 100.0]))  # Much higher penalties
+        R = jnp.array([[100.0]])  # Much higher R
         return Q, R
     
     def sample_initial_condition(self):
@@ -155,7 +156,7 @@ class VTOLLinearized(LTISystem):
         m, J, g, l = self.params['m'], self.params['J'], self.params['g'], self.params['l']
         
         # Linearized around hover (theta = 0) with damping
-        A = np.array([
+        A = jnp.array([
             [0, 0, 0, 1, 0, 0],
             [0, 0, 0, 0, 1, 0],
             [0, 0, 0, 0, 0, 1],
@@ -163,7 +164,7 @@ class VTOLLinearized(LTISystem):
             [0, 0, 0, 0, -0.5, 0],   # Added air drag
             [0, 0, 0, 0, 0, -0.2]    # Added angular damping
         ])
-        B = np.array([
+        B = jnp.array([
             [0, 0],
             [0, 0],
             [0, 0],
@@ -174,8 +175,8 @@ class VTOLLinearized(LTISystem):
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([50.0, 100.0, 100.0, 5.0, 10.0, 10.0])  # Much higher penalties
-        R = np.diag([1.0, 1.0])  # Much higher R
+        Q = jnp.diag(jnp.array([50.0, 100.0, 100.0, 5.0, 10.0, 10.0]))  # Much higher penalties
+        R = jnp.diag(jnp.array([10.0, 10.0]))  # Much higher R
         return Q, R
     
     def sample_initial_condition(self):

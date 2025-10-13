@@ -1,561 +1,422 @@
 """
-Fast Training Script using JAX/Flax and Pre-Processed HDF5 Data
-
-OPTIMIZATIONS (Inspired by High-Performance JAX Projects):
-1. XLA_PYTHON_CLIENT_MEM_FRACTION=0.4 (40% GPU memory per device)
-2. CHUNKED CACHE LOADING (loads 50k sequences into RAM at once) ⚡ KEY!
-   - HDF5 batch-by-batch: ~5 it/s (SLOW!)
-   - HDF5 chunked cache: ~30-50 it/s (FAST!)
-3. Sorted HDF5 reads (sequential access is 10x faster)
-4. JIT-compiled train/eval steps
-5. Triton kernel fusion for softmax and GEMM
-6. Efficient RNG handling for dropout
-7. Progress bar with loss updates every 10 batches
-
-Expected speed: 30-50 it/s on 3x RTX 2080 Ti with 72M sequences
-With stride=16 (4.5M sequences): 30-50 it/s = ~2-3 minutes/epoch!
-
-Run data_generation.py first to create training_data.h5
+JAX Training Script for Universal LQR Transformer
+JIT-compiled for maximum GPU efficiency with multi-GPU support
 """
 
 import jax
 import jax.numpy as jnp
-from jax import random, pmap, device_put
-import flax.linen as nn
-from flax.training import train_state
+from jax import jit, grad, value_and_grad
+from jax import tree
 import optax
+from flax.training import train_state
+from flax import jax_utils
 import numpy as np
-import h5py
 import os
+import time
 from tqdm import tqdm
-from functools import partial
-from typing import Any
-import threading
-import queue
+import pickle
+from typing import Dict, Any
 
-from config import (
-    TRANSFORMER_CONFIG, TRAINING_CONFIG,
-    DATA_DIR, MODEL_DIR, RANDOM_SEED,
-    MAX_STATE_DIM, MAX_INPUT_DIM, DIMENSION_ENCODING_SIZE, SEQUENCE_LENGTH
+# For fast CPU training (12-20 hours), use config_fast_cpu
+# For full model (15+ days), use config
+from config_fast_cpu import (
+    DATA_DIR, MODEL_DIR, LOG_DIR, TRANSFORMER_CONFIG, TRAINING_CONFIG,
+    SEQUENCE_LENGTH, MAX_STATE_DIM, MAX_INPUT_DIM, DIMENSION_ENCODING_SIZE
 )
+from transformer_model_jax import create_model, count_parameters
+from data_loader import create_jax_dataloaders
 
-# CRITICAL: JAX/XLA optimizations (inspired by AnyCar project)
-# Use only 40% of GPU memory per device (leaves room for data loading)
-os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '0.4'
-# Don't preallocate all memory
-os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
-# Enable memory defragmentation
-os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
-# Optimize for multi-GPU
-os.environ['XLA_FLAGS'] = '--xla_gpu_enable_triton_softmax_fusion=true --xla_gpu_triton_gemm_any=True'
+# Create directories if they don't exist
+import os as _os
+_os.makedirs(DATA_DIR, exist_ok=True)
+_os.makedirs(MODEL_DIR, exist_ok=True)
+_os.makedirs(LOG_DIR, exist_ok=True)
 
 
-class MultiHeadAttention(nn.Module):
-    """Multi-head attention mechanism."""
-    d_model: int
-    n_heads: int
-    dropout: float = 0.1
+def masked_mse_loss(predictions, targets, masks):
+    """
+    Masked MSE loss - only compute loss on active control dimensions.
     
-    @nn.compact
-    def __call__(self, x, mask=None, training=True):
-        batch_size, seq_len, _ = x.shape
-        head_dim = self.d_model // self.n_heads
-        
-        # Linear projections
-        qkv = nn.Dense(3 * self.d_model)(x)
-        qkv = qkv.reshape(batch_size, seq_len, 3, self.n_heads, head_dim)
-        q, k, v = jnp.split(qkv, 3, axis=2)
-        q, k, v = q.squeeze(2), k.squeeze(2), v.squeeze(2)
-        
-        # Transpose for attention: (batch, n_heads, seq_len, head_dim)
-        q = jnp.transpose(q, (0, 2, 1, 3))
-        k = jnp.transpose(k, (0, 2, 1, 3))
-        v = jnp.transpose(v, (0, 2, 1, 3))
-        
-        # Attention scores
-        scores = jnp.matmul(q, jnp.transpose(k, (0, 1, 3, 2))) / jnp.sqrt(head_dim)
-        
-        # Apply mask
-        if mask is not None:
-            scores = jnp.where(mask == 0, -1e4, scores)
-        
-        # Attention weights
-        attn_weights = nn.softmax(scores, axis=-1)
-        attn_weights = nn.Dropout(rate=self.dropout, deterministic=not training)(attn_weights)
-        
-        # Apply attention to values
-        attn_output = jnp.matmul(attn_weights, v)
-        attn_output = jnp.transpose(attn_output, (0, 2, 1, 3))
-        attn_output = attn_output.reshape(batch_size, seq_len, self.d_model)
-        
-        # Final linear projection
-        output = nn.Dense(self.d_model)(attn_output)
-        output = nn.Dropout(rate=self.dropout, deterministic=not training)(output)
-        
-        return output
-
-
-class TransformerBlock(nn.Module):
-    """Transformer block with self-attention and feed-forward."""
-    d_model: int
-    n_heads: int
-    d_ff: int
-    dropout: float = 0.1
+    Args:
+        predictions: (batch, output_dim)
+        targets: (batch, output_dim)
+        masks: (batch, output_dim) - 1 for active dims, 0 for padded
+    Returns:
+        loss: scalar
+    """
+    squared_error = (predictions - targets) ** 2
+    masked_error = squared_error * masks
     
-    @nn.compact
-    def __call__(self, x, mask=None, training=True):
-        # Self-attention with residual
-        attn_out = MultiHeadAttention(
-            d_model=self.d_model,
-            n_heads=self.n_heads,
-            dropout=self.dropout
-        )(x, mask=mask, training=training)
-        x = nn.LayerNorm()(x + attn_out)
-        
-        # Feed-forward with residual
-        ff_out = nn.Dense(self.d_ff)(x)
-        ff_out = nn.gelu(ff_out)
-        ff_out = nn.Dropout(rate=self.dropout, deterministic=not training)(ff_out)
-        ff_out = nn.Dense(self.d_model)(ff_out)
-        ff_out = nn.Dropout(rate=self.dropout, deterministic=not training)(ff_out)
-        x = nn.LayerNorm()(x + ff_out)
-        
-        return x
-
-
-class UniversalLQRTransformer(nn.Module):
-    """JAX/Flax Universal LQR Transformer."""
-    d_model: int = 256
-    n_heads: int = 8
-    n_layers: int = 6
-    d_ff: int = 1024
-    dropout: float = 0.1
-    max_seq_len: int = 128
-    max_state_dim: int = 12
-    max_control_dim: int = 6
-    dimension_encoding_size: int = 7
+    # Normalize by number of active elements
+    loss = jnp.sum(masked_error) / jnp.maximum(jnp.sum(masks), 1.0)
     
-    @nn.compact
-    def __call__(self, x, control_mask=None, training=True):
-        batch_size, seq_len, input_dim = x.shape
-        
-        # Input embedding
-        x = nn.Dense(self.d_model)(x)
-        
-        # Positional encoding
-        pos_encoding = self.param(
-            'pos_encoding',
-            nn.initializers.normal(stddev=0.02),
-            (1, self.max_seq_len, self.d_model)
-        )
-        x = x + pos_encoding[:, :seq_len, :]
-        x = nn.Dropout(rate=self.dropout, deterministic=not training)(x)
-        
-        # Causal mask
-        causal_mask = jnp.tril(jnp.ones((seq_len, seq_len)))
-        causal_mask = causal_mask.reshape(1, 1, seq_len, seq_len)
-        
-        # Transformer blocks
-        for _ in range(self.n_layers):
-            x = TransformerBlock(
-                d_model=self.d_model,
-                n_heads=self.n_heads,
-                d_ff=self.d_ff,
-                dropout=self.dropout
-            )(x, mask=causal_mask, training=training)
-        
-        # Output projection
-        output = nn.Dense(self.max_control_dim)(x)
-        
-        return output
+    return loss
 
 
-def create_train_state(rng, learning_rate):
-    """Create initial training state."""
-    model = UniversalLQRTransformer(
-        d_model=TRANSFORMER_CONFIG['d_model'],
-        n_heads=TRANSFORMER_CONFIG['n_heads'],
-        n_layers=TRANSFORMER_CONFIG['n_layers'],
-        d_ff=TRANSFORMER_CONFIG['d_ff'],
-        dropout=TRANSFORMER_CONFIG['dropout'],
-        max_seq_len=TRANSFORMER_CONFIG['max_seq_len'],
-        max_state_dim=MAX_STATE_DIM,
-        max_control_dim=MAX_INPUT_DIM,
-        dimension_encoding_size=DIMENSION_ENCODING_SIZE
-    )
+def create_train_state(rng, config, learning_rate):
+    """
+    Create initial training state.
     
-    # Initialize with RNG for dropout
-    dummy_input = jnp.ones((1, SEQUENCE_LENGTH, MAX_STATE_DIM + DIMENSION_ENCODING_SIZE))
-    rng, init_rng, dropout_rng = random.split(rng, 3)
-    variables = model.init({'params': init_rng, 'dropout': dropout_rng}, dummy_input, training=False)
+    Args:
+        rng: Random key
+        config: Model config
+        learning_rate: Learning rate
+    Returns:
+        state: Training state
+    """
+    model = create_model(config)
     
-    # Create optimizer with warmup
+    # Initialize with dummy data
+    dummy_input = jnp.ones((1, SEQUENCE_LENGTH, config['input_dim']))
+    params = model.init(rng, dummy_input, training=False)
+    
+    # Count parameters
+    n_params = count_parameters(params)
+    print(f"Model parameters: {n_params:,}")
+    
+    # Create optimizer with warmup and cosine decay
     schedule = optax.warmup_cosine_decay_schedule(
         init_value=0.0,
         peak_value=learning_rate,
         warmup_steps=TRAINING_CONFIG['warmup_steps'],
-        decay_steps=TRAINING_CONFIG['num_epochs'] * 67000,  # Approximate
+        decay_steps=TRAINING_CONFIG['num_epochs'] * 1000,  # Approximate
         end_value=learning_rate * 0.1
     )
-    tx = optax.chain(
+    
+    optimizer = optax.chain(
         optax.clip_by_global_norm(TRAINING_CONFIG['gradient_clip']),
-        optax.adam(schedule)
+        optax.adamw(learning_rate=schedule, weight_decay=TRAINING_CONFIG['weight_decay'])
     )
     
-    return train_state.TrainState.create(
+    state = train_state.TrainState.create(
         apply_fn=model.apply,
-        params=variables['params'],
-        tx=tx
-    ), variables
-
-
-@partial(jax.jit, static_argnums=(5,))
-def train_step(state, batch_inputs, batch_targets, batch_masks, rng, training=True):
-    """Single training step (JIT compiled)."""
+        params=params,
+        tx=optimizer
+    )
     
+    return state
+
+
+@jit
+def train_step(state, batch, rng):
+    """
+    Single training step (JIT compiled).
+    
+    Args:
+        state: Training state
+        batch: Batch dict with input_sequences, controls, control_masks
+        rng: Random key for dropout
+    Returns:
+        state: Updated state
+        loss: Scalar loss
+    """
     def loss_fn(params):
-        # Forward pass with RNG for dropout
-        outputs = state.apply_fn(
-            {'params': params},
-            batch_inputs,
-            training=training,
+        predictions = state.apply_fn(
+            params, 
+            batch['input_sequences'],
+            training=True,
             rngs={'dropout': rng}
         )
-        
-        # Extract last timestep
-        outputs_last = outputs[:, -1, :]
-        
-        # Masked MSE loss
-        loss_per_dim = (outputs_last - batch_targets) ** 2
-        masked_loss = loss_per_dim * batch_masks
-        loss = jnp.sum(masked_loss) / jnp.sum(batch_masks)
-        
+        loss = masked_mse_loss(predictions, batch['controls'], batch['control_masks'])
         return loss
     
-    # Compute loss and gradients
-    loss, grads = jax.value_and_grad(loss_fn)(state.params)
-    
-    # Update parameters
+    loss, grads = value_and_grad(loss_fn)(state.params)
     state = state.apply_gradients(grads=grads)
     
     return state, loss
 
 
-@partial(jax.jit, static_argnums=(4,))
-def eval_step(state, batch_inputs, batch_targets, batch_masks, training=False):
-    """Single evaluation step (JIT compiled)."""
+@jit
+def eval_step(state, batch):
+    """
+    Single evaluation step (JIT compiled).
     
-    # Forward pass (no dropout during eval, so no RNG needed)
-    outputs = state.apply_fn(
-        {'params': state.params},
-        batch_inputs,
-        training=training,
-        rngs={}  # Empty dict for eval mode
+    Args:
+        state: Training state
+        batch: Batch dict
+    Returns:
+        loss: Scalar loss
+    """
+    predictions = state.apply_fn(
+        state.params,
+        batch['input_sequences'],
+        training=False
     )
-    
-    # Extract last timestep
-    outputs_last = outputs[:, -1, :]
-    
-    # Masked MSE loss
-    loss_per_dim = (outputs_last - batch_targets) ** 2
-    masked_loss = loss_per_dim * batch_masks
-    loss = jnp.sum(masked_loss) / jnp.sum(batch_masks)
-    
+    loss = masked_mse_loss(predictions, batch['controls'], batch['control_masks'])
     return loss
 
 
-def load_batch_from_h5(h5file, indices, start_idx, batch_size):
-    """Load a batch from HDF5 file.
-    
-    OPTIMIZATION: Load sequentially when possible (much faster than random access)
-    HDF5 is optimized for sequential reads, so we sort indices.
+def train_epoch(state, train_loader, rng, epoch, device):
     """
-    end_idx = min(start_idx + batch_size, len(indices))
-    batch_indices = indices[start_idx:end_idx]
+    Train for one epoch (memory-efficient with GPU transfer).
     
-    # CRITICAL: HDF5 requires sorted indices for efficient fancy indexing
-    # Sort indices and keep track of original order
-    sort_order = np.argsort(batch_indices)
-    sorted_indices = batch_indices[sort_order]
-    
-    # Load data with sorted indices (FAST sequential read)
-    # Use numpy arrays first (faster than converting to JAX immediately)
-    inputs = np.array(h5file['input_sequences'][sorted_indices], dtype=np.float32)
-    controls = np.array(h5file['controls'][sorted_indices], dtype=np.float32)
-    masks = np.array(h5file['control_masks'][sorted_indices], dtype=np.float32)
-    
-    # Restore original shuffle order
-    unsort_order = np.argsort(sort_order)
-    inputs = inputs[unsort_order]
-    controls = controls[unsort_order]
-    masks = masks[unsort_order]
-    
-    # Convert to JAX arrays (this happens on GPU if available)
-    return (
-        jnp.array(inputs),
-        jnp.array(controls),
-        jnp.array(masks)
-    )
-
-
-class ChunkedCacheLoader:
+    Args:
+        state: Training state
+        train_loader: Training data loader
+        rng: Random key
+        epoch: Current epoch number
+        device: JAX device for GPU transfer
+    Returns:
+        state: Updated state
+        avg_loss: Average training loss
     """
-    High-performance chunked data loader for JAX.
+    total_loss = 0.0
+    n_batches = len(train_loader)
     
-    KEY INSIGHT: HDF5 random access is SLOW. Instead:
-    1. Load large chunks (e.g., 50,000 sequences) into RAM at once
-    2. Serve batches from RAM (10,000x faster!)
-    3. When chunk exhausted, load next chunk in background
+    pbar = tqdm(train_loader, desc=f"Epoch {epoch+1} [Train]", 
+                bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]')
     
-    This is how high-performance JAX projects handle large datasets.
-    """
-    def __init__(self, h5file, indices, batch_size, chunk_size=50000):
-        self.h5file = h5file
-        self.indices = indices
-        self.batch_size = batch_size
-        self.chunk_size = chunk_size
-        self.n_batches = len(indices) // batch_size
+    for batch_idx, batch_np in enumerate(pbar):
+        # Transfer to device efficiently (only the data we need)
+        batch = tree.map(lambda x: jax.device_put(jnp.array(x), device), batch_np)
         
-        # Pre-allocate cache arrays
-        self.cache_inputs = None
-        self.cache_controls = None
-        self.cache_masks = None
-        self.cache_start_idx = 0
-        self.current_batch_idx = 0
+        # Generate new RNG for this batch
+        rng, step_rng = jax.random.split(rng)
         
-    def _load_chunk(self, start_idx):
-        """Load a large chunk of data into RAM (FAST sequential read)."""
-        end_idx = min(start_idx + self.chunk_size, len(self.indices))
-        chunk_indices = self.indices[start_idx:end_idx]
+        # Training step (JIT-compiled, runs on GPU)
+        state, loss = train_step(state, batch, step_rng)
         
-        # CRITICAL: Sort for fast sequential HDF5 read
-        sort_order = np.argsort(chunk_indices)
-        sorted_indices = chunk_indices[sort_order]
+        # Block until computation is done and get loss value
+        loss_value = float(loss)
+        total_loss += loss_value
         
-        # Load entire chunk at once (MUCH faster than batch-by-batch)
-        print(f"Loading chunk {start_idx//self.chunk_size + 1} into RAM ({end_idx - start_idx:,} sequences)...", end=' ')
-        inputs = np.array(self.h5file['input_sequences'][sorted_indices], dtype=np.float32)
-        controls = np.array(self.h5file['controls'][sorted_indices], dtype=np.float32)
-        masks = np.array(self.h5file['control_masks'][sorted_indices], dtype=np.float32)
-        print("Done!")
-        
-        # Restore shuffle order
-        unsort_order = np.argsort(sort_order)
-        return inputs[unsort_order], controls[unsort_order], masks[unsort_order]
-    
-    def __iter__(self):
-        self.current_batch_idx = 0
-        self.cache_start_idx = 0
-        # Load first chunk
-        self.cache_inputs, self.cache_controls, self.cache_masks = self._load_chunk(0)
-        return self
-    
-    def __next__(self):
-        if self.current_batch_idx >= self.n_batches:
-            raise StopIteration
-        
-        # Calculate position in cache
-        global_idx = self.current_batch_idx * self.batch_size
-        cache_idx = global_idx - self.cache_start_idx
-        
-        # Check if we need to load next chunk
-        if cache_idx + self.batch_size > len(self.cache_inputs):
-            self.cache_start_idx = global_idx
-            self.cache_inputs, self.cache_controls, self.cache_masks = self._load_chunk(global_idx)
-            cache_idx = 0
-        
-        # Get batch from cache (super fast - just array slicing!)
-        batch_inputs = self.cache_inputs[cache_idx:cache_idx + self.batch_size]
-        batch_controls = self.cache_controls[cache_idx:cache_idx + self.batch_size]
-        batch_masks = self.cache_masks[cache_idx:cache_idx + self.batch_size]
-        
-        self.current_batch_idx += 1
-        
-        # Convert to JAX arrays
-        return (
-            jnp.array(batch_inputs),
-            jnp.array(batch_controls),
-            jnp.array(batch_masks)
-        )
-    
-    def __len__(self):
-        return self.n_batches
-
-
-def train_epoch(state, h5file, train_indices, batch_size, rng):
-    """Train for one epoch with chunked cache loading."""
-    # Shuffle indices
-    rng, shuffle_rng = random.split(rng)
-    perm = random.permutation(shuffle_rng, len(train_indices))
-    shuffled_indices = train_indices[perm]
-    
-    # Create chunked cache loader (loads 50k sequences at a time into RAM)
-    dataloader = ChunkedCacheLoader(h5file, shuffled_indices, batch_size, chunk_size=50000)
-    
-    epoch_loss = 0.0
-    n_batches = 0
-    
-    # Progress bar
-    pbar = tqdm(dataloader, total=len(dataloader), desc="Training", dynamic_ncols=True)
-    
-    for batch_inputs, batch_targets, batch_masks in pbar:
-        # Generate RNG key for this batch (for dropout)
-        rng, dropout_rng = random.split(rng)
-        
-        # Train step
-        state, loss = train_step(state, batch_inputs, batch_targets, batch_masks, 
-                                dropout_rng, training=True)
-        
-        epoch_loss += loss
-        n_batches += 1
+        # Reset tqdm timer after JIT compilation (first 2 batches)
+        if batch_idx == 2:
+            pbar.start_t = time.time()  # Reset timer after compilation
         
         # Update progress bar
-        if n_batches % 10 == 0:
-            pbar.set_postfix({'loss': f'{float(loss):.6f}', 
-                            'avg_loss': f'{float(epoch_loss/n_batches):.6f}'})
+        pbar.set_postfix({'loss': f'{loss_value:.6f}', 'avg': f'{total_loss/(batch_idx+1):.6f}'})
     
-    return state, epoch_loss / n_batches, rng
+    avg_loss = total_loss / n_batches
+    return state, avg_loss, rng
 
 
-def validate(state, h5file, test_indices, batch_size):
-    """Validate the model with chunked cache loading."""
-    # Create chunked cache loader
-    dataloader = ChunkedCacheLoader(h5file, test_indices, batch_size, chunk_size=50000)
+def evaluate(state, val_loader, epoch, device):
+    """
+    Evaluate on validation set (memory-efficient with GPU transfer).
     
-    val_loss = 0.0
-    n_batches = 0
+    Args:
+        state: Training state
+        val_loader: Validation data loader
+        epoch: Current epoch number
+        device: JAX device for GPU transfer
+    Returns:
+        avg_loss: Average validation loss
+    """
+    total_loss = 0.0
+    n_batches = len(val_loader)
     
-    for batch_inputs, batch_targets, batch_masks in tqdm(dataloader, 
-                                                          desc="Validation", 
-                                                          dynamic_ncols=True):
-        loss = eval_step(state, batch_inputs, batch_targets, batch_masks, training=False)
-        val_loss += loss
-        n_batches += 1
+    pbar = tqdm(val_loader, desc=f"Epoch {epoch+1} [Val]",
+                bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]')
     
-    return val_loss / n_batches
+    for batch_idx, batch_np in enumerate(pbar):
+        # Transfer to device efficiently
+        batch = tree.map(lambda x: jax.device_put(jnp.array(x), device), batch_np)
+        
+        # Evaluation step (JIT-compiled, runs on GPU)
+        loss = eval_step(state, batch)
+        
+        # Block until computation is done and get loss value
+        loss_value = float(loss)
+        total_loss += loss_value
+        
+        pbar.set_postfix({'loss': f'{loss_value:.6f}', 'avg': f'{total_loss/(batch_idx+1):.6f}'})
+    
+    avg_loss = total_loss / n_batches
+    return avg_loss
+
+
+def save_checkpoint(state, epoch, val_loss, save_dir, filename='checkpoint.pkl'):
+    """Save training checkpoint."""
+    os.makedirs(save_dir, exist_ok=True)
+    checkpoint = {
+        'params': state.params,
+        'opt_state': state.opt_state,
+        'epoch': epoch,
+        'val_loss': val_loss
+    }
+    
+    path = os.path.join(save_dir, filename)
+    with open(path, 'wb') as f:
+        pickle.dump(checkpoint, f)
+    
+    print(f"  Checkpoint saved: {path}")
 
 
 def main():
-    print("="*70)
-    print("JAX/Flax Universal LQR Transformer Training")
-    print("Optimizations: XLA + Chunked Cache Loading (50k sequences/chunk)")
-    print("="*70)
+    """Main training loop (memory-efficient GPU training)."""
     
-    # Check devices
-    print(f"\nJAX devices: {jax.devices()}")
-    print(f"Number of devices: {jax.device_count()}")
-    print(f"\nData Loading Strategy:")
-    print(f"  Method: Chunked cache (loads 50k sequences into RAM)")
-    print(f"  Why: HDF5 random access is 10x slower than RAM access")
-    print(f"  Expected speed: 30-50 it/s (vs 5 it/s with batch-by-batch)")
-    print(f"\nXLA Optimizations:")
-    print(f"  Memory fraction: {os.environ.get('XLA_PYTHON_CLIENT_MEM_FRACTION', 'default')}")
-    print(f"  Preallocate: {os.environ.get('XLA_PYTHON_CLIENT_PREALLOCATE', 'default')}")
+    training_start_time = time.time()
+    
+    print("="*80)
+    print(" JAX Universal LQR Transformer Training ".center(80, "="))
+    print("="*80)
+    
+    # Setup
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    os.makedirs(LOG_DIR, exist_ok=True)
+    
+    # Check for GPUs and get device
+    devices = jax.devices()
+    device = devices[0]  # Use first device (GPU if available)
+    n_devices = len(devices)
+    
+    print(f"\n{'='*80}")
+    print(f"DEVICE CONFIGURATION")
+    print(f"{'='*80}")
+    print(f"Available devices: {n_devices}")
+    print(f"Device type: {device.device_kind}")
+    print(f"Device: {device}")
+    print(f"Backend: {jax.default_backend()}")
+    
+    if device.device_kind == 'METAL':
+        print(f"✓ Using Apple Metal GPU acceleration on M4!")
+    elif device.device_kind == 'gpu':
+        print(f"✓ Using CUDA GPU acceleration!")
+    else:
+        print(f"⚠ Using CPU (slower training expected)")
+    print()
     
     # Load data
-    h5_file = os.path.join(DATA_DIR, 'training_data.h5')
+    print("\nLoading data...")
+    h5_path = os.path.join(DATA_DIR, 'training_data_jax.h5')
     
-    if not os.path.exists(h5_file):
-        print(f"\nERROR: Training data not found: {h5_file}")
-        print("Please run: python data_generation.py")
+    if not os.path.exists(h5_path):
+        print(f"Error: Data file not found: {h5_path}")
+        print("Please run data_generation.py first.")
         return
     
-    print(f"\nLoading training data from: {h5_file}")
-    with h5py.File(h5_file, 'r') as hf:
-        total_sequences = hf['input_sequences'].shape[0]
-        print(f"Total sequences: {total_sequences:,}")
+    train_loader, val_loader = create_jax_dataloaders(
+        h5_path,
+        batch_size=TRAINING_CONFIG['batch_size'],
+        validation_split=TRAINING_CONFIG['validation_split']
+    )
     
-    # Create train/test split
-    all_indices = np.arange(total_sequences)
-    np.random.seed(RANDOM_SEED)
-    np.random.shuffle(all_indices)
+    print(f"  Training batches: {len(train_loader)}")
+    print(f"  Validation batches: {len(val_loader)}")
+    print(f"  Sequences per epoch: {len(train_loader) * TRAINING_CONFIG['batch_size']:,}")
     
-    test_size = int(total_sequences * 0.05)
-    train_size = total_sequences - test_size
+    # Save normalization stats
+    stats = train_loader.get_normalization_stats()
+    stats_path = os.path.join(MODEL_DIR, 'normalization_stats_jax.pkl')
+    with open(stats_path, 'wb') as f:
+        pickle.dump(stats, f)
+    print(f"  Normalization stats saved: {stats_path}")
     
-    train_indices = all_indices[:train_size]
-    test_indices = all_indices[train_size:]
+    # Create model
+    print("\nInitializing model...")
+    rng = jax.random.PRNGKey(42)
+    rng, init_rng = jax.random.split(rng)
     
-    print(f"Train size: {train_size:,} (95%)")
-    print(f"Test size: {test_size:,} (5%)")
-    print(f"Batch size: {TRAINING_CONFIG['batch_size']}")
-    print(f"Batches per epoch: {train_size // TRAINING_CONFIG['batch_size']:,}")
+    state = create_train_state(
+        init_rng,
+        TRANSFORMER_CONFIG,
+        TRAINING_CONFIG['learning_rate']
+    )
     
-    # Initialize model
-    print("\n=== Creating Model ===")
-    rng = random.PRNGKey(RANDOM_SEED)
-    rng, init_rng = random.split(rng)
-    
-    state, variables = create_train_state(init_rng, TRAINING_CONFIG['learning_rate'])
-    
-    # Count parameters
-    param_count = sum(x.size for x in jax.tree_util.tree_leaves(state.params))
-    print(f"Model parameters: {param_count:,}")
+    # Training info
+    print("\nTraining Configuration:")
+    print(f"  Epochs: {TRAINING_CONFIG['num_epochs']}")
+    print(f"  Batch size: {TRAINING_CONFIG['batch_size']}")
+    print(f"  Learning rate: {TRAINING_CONFIG['learning_rate']}")
+    print(f"  Warmup steps: {TRAINING_CONFIG['warmup_steps']}")
+    print(f"  Weight decay: {TRAINING_CONFIG['weight_decay']}")
+    print(f"  Gradient clip: {TRAINING_CONFIG['gradient_clip']}")
     
     # Training loop
-    print("\n=== Starting Training ===\n")
-    os.makedirs(MODEL_DIR, exist_ok=True)
+    print("\n" + "="*80)
+    print("STARTING TRAINING (Memory-efficient streaming from HDF5)")
+    print("="*80)
+    print(f"Note: Data is streamed in batches, never loading full dataset into RAM")
+    print()
     
     best_val_loss = float('inf')
-    history = {'train_loss': [], 'val_loss': []}
+    training_history = {
+        'train_loss': [],
+        'val_loss': [],
+        'epoch_times': []
+    }
     
-    # Open HDF5 file for entire training
-    with h5py.File(h5_file, 'r') as hf:
-        for epoch in range(TRAINING_CONFIG['num_epochs']):
-            print(f"\n{'='*70}")
-            print(f"Epoch {epoch+1}/{TRAINING_CONFIG['num_epochs']}")
-            print(f"{'='*70}")
-            
-            # Train
-            state, train_loss, rng = train_epoch(
-                state, hf, train_indices,
-                TRAINING_CONFIG['batch_size'], rng
-            )
-            train_loss = float(train_loss)
-            history['train_loss'].append(train_loss)
-            
-            # Validate
-            val_loss = validate(
-                state, hf, test_indices,
-                TRAINING_CONFIG['batch_size']
-            )
-            val_loss = float(val_loss)
-            history['val_loss'].append(val_loss)
-            
-            print(f"\nTrain Loss: {train_loss:.6f} | Test Loss: {val_loss:.6f}")
-            
-            # Save best model
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
-                # Save using Flax's checkpointing
-                import pickle
-                with open(os.path.join(MODEL_DIR, 'best_model_jax.pkl'), 'wb') as f:
-                    pickle.dump(state.params, f)
-                print(f"[OK] Saved best model (test_loss: {val_loss:.6f})")
-            
-            # Save checkpoint
-            if (epoch + 1) % TRAINING_CONFIG['save_every'] == 0:
-                import pickle
-                checkpoint = {
-                    'epoch': epoch,
-                    'params': state.params,
-                    'train_loss': train_loss,
-                    'val_loss': val_loss,
-                }
-                with open(os.path.join(MODEL_DIR, f'checkpoint_epoch_{epoch+1}_jax.pkl'), 'wb') as f:
-                    pickle.dump(checkpoint, f)
-                print(f"[OK] Saved checkpoint at epoch {epoch+1}")
+    for epoch in range(TRAINING_CONFIG['num_epochs']):
+        epoch_start = time.time()
+        
+        # Train (with GPU device)
+        state, train_loss, rng = train_epoch(state, train_loader, rng, epoch, device)
+        
+        # Evaluate (with GPU device)
+        val_loss = evaluate(state, val_loader, epoch, device)
+        
+        epoch_time = time.time() - epoch_start
+        
+        # Log
+        training_history['train_loss'].append(train_loss)
+        training_history['val_loss'].append(val_loss)
+        training_history['epoch_times'].append(epoch_time)
+        
+        epoch_mins = epoch_time / 60.0
+        elapsed_mins = (time.time() - training_start_time) / 60.0
+        
+        print(f"\n{'='*80}")
+        print(f"Epoch {epoch+1}/{TRAINING_CONFIG['num_epochs']} Summary")
+        print(f"{'='*80}")
+        print(f"  Train Loss:     {train_loss:.6f}")
+        print(f"  Val Loss:       {val_loss:.6f}")
+        print(f"  Epoch Time:     {epoch_mins:.2f} min ({epoch_time:.1f}s)")
+        print(f"  Elapsed Time:   {elapsed_mins:.2f} min")
+        
+        # Save best model
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            save_checkpoint(state, epoch, val_loss, MODEL_DIR, 'best_model_jax.pkl')
+            print(f"  ✓ New best model! Val loss: {val_loss:.6f}")
+        
+        # Save periodic checkpoint
+        if (epoch + 1) % TRAINING_CONFIG['save_every'] == 0:
+            save_checkpoint(state, epoch, val_loss, MODEL_DIR, f'checkpoint_epoch_{epoch+1}_jax.pkl')
+        
+        print("-"*70)
     
-    print("\n" + "="*70)
-    print("TRAINING COMPLETE!")
-    print(f"Best test loss: {best_val_loss:.6f}")
-    print(f"Model saved to: {MODEL_DIR}")
-    print("="*70)
+    # Final save
+    save_checkpoint(state, epoch, val_loss, MODEL_DIR, 'final_model_jax.pkl')
     
     # Save training history
-    import json
-    with open(os.path.join(MODEL_DIR, 'training_history_jax.json'), 'w') as f:
-        json.dump(history, f, indent=2)
+    history_path = os.path.join(LOG_DIR, 'training_history_jax.pkl')
+    with open(history_path, 'wb') as f:
+        pickle.dump(training_history, f)
+    
+    # Calculate final statistics
+    total_time_sec = time.time() - training_start_time
+    total_time_min = total_time_sec / 60.0
+    total_time_hr = total_time_sec / 3600.0
+    avg_epoch_time_min = np.mean(training_history['epoch_times']) / 60.0
+    
+    print("\n" + "="*80)
+    print(" TRAINING COMPLETE! ".center(80, "="))
+    print("="*80)
+    
+    print(f"\n{'FINAL RESULTS':^80}")
+    print(f"{'='*80}")
+    print(f"  Best Validation Loss:        {best_val_loss:.6f}")
+    print(f"  Final Training Loss:         {training_history['train_loss'][-1]:.6f}")
+    print(f"  Final Validation Loss:       {training_history['val_loss'][-1]:.6f}")
+    
+    print(f"\n{'TIMING STATISTICS':^80}")
+    print(f"{'='*80}")
+    print(f"  Total Training Time:         {total_time_min:.2f} minutes ({total_time_hr:.2f} hours)")
+    print(f"  Average Epoch Time:          {avg_epoch_time_min:.2f} minutes")
+    print(f"  Total Epochs:                {TRAINING_CONFIG['num_epochs']}")
+    print(f"  Device:                      {device.device_kind}")
+    
+    print(f"\n{'OUTPUT FILES':^80}")
+    print(f"{'='*80}")
+    print(f"  Best Model:                  {os.path.join(MODEL_DIR, 'best_model_jax.pkl')}")
+    print(f"  Final Model:                 {os.path.join(MODEL_DIR, 'final_model_jax.pkl')}")
+    print(f"  Training History:            {history_path}")
+    print(f"  Normalization Stats:         {os.path.join(MODEL_DIR, 'normalization_stats_jax.pkl')}")
+    
+    print(f"\n{'='*80}")
+    print(f" ✓ Training completed successfully! ".center(80, "="))
+    print(f"{'='*80}\n")
 
 
 if __name__ == '__main__':

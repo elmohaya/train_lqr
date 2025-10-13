@@ -1,0 +1,642 @@
+======================================================================
+======================= FAST CPU CONFIG LOADED =======================
+======================================================================
+Model size: ~40k parameters (vs 200k in normal config)
+Layers: 2 (vs 4)
+d_model: 32 (vs 64)
+Epochs: 20 (vs 50)
+Expected training time: ~12-20 hours
+======================================================================
+================================================================================
+==================== JAX Universal LQR Transformer Training ====================
+================================================================================
+
+================================================================================
+DEVICE CONFIGURATION
+================================================================================
+Available devices: 1
+Device type: cpu
+Device: TFRT_CPU_0
+Backend: cpu
+⚠ Using CPU (slower training expected)
+
+
+Loading data...
+  Training batches: 142431
+  Validation batches: 25134
+  Sequences per epoch: 72,924,672
+  Normalization stats saved: ./models/normalization_stats_jax.pkl
+
+Initializing model...
+Model parameters: 30,086
+
+Training Configuration:
+  Epochs: 20
+  Batch size: 512
+  Learning rate: 0.0003
+  Warmup steps: 1000
+  Weight decay: 0.0001
+  Gradient clip: 1.0
+
+================================================================================
+STARTING TRAINING (Memory-efficient streaming from HDF5)
+================================================================================
+Note: Data is streamed in batches, never loading full dataset into RAM
+
+
+================================================================================
+DEBUG: Starting Epoch 1
+================================================================================
+Total batches (before stopping): 142431
+Will process 10 batches with ULTRA-DETAILED profiling
+
+
+======================================================================
+Batch 1/10 DETAILED BREAKDOWN:
+======================================================================
+Data Shapes: input=(512, 32, 19), control=(512, 6), mask=(512, 6)
+
+  DATA CONVERSION:
+    Shape check:          0.00ms
+    Input->JAX:           5.88ms
+    Controls->JAX:        4.34ms
+    Masks->JAX:           0.04ms
+    Dict creation:        0.00ms
+    TOTAL CONVERSION:     10.26ms
+
+  TRAINING STEP:
+    RNG split:            0.11ms
+    train_step() call:    1528.76ms
+    Block/sync:           60.91ms
+    Loss analysis:        49.17ms
+    Gradient analysis:    119.51ms
+    State access:         0.00ms
+
+  ⚠️  LOSS ANALYSIS (CRITICAL):
+    Total loss:           15781.453125
+    Per-sample loss stats:
+      Min:                0.000016
+      Max:                7217821.500000
+      Mean:               27615.806641
+      Std:                360936.656250
+    # of samples with loss > 100: 50
+    # of samples with loss > 1000: 29
+
+  📊 DATA STATISTICS:
+    Targets (controls):
+      Mean:               -0.530012
+      Std:                67.825104
+      Min:                -2686.532227
+      Max:                1793.247070
+    Predictions:
+      Mean:               0.109444
+      Std:                0.910464
+      Min:                -3.492385
+      Max:                2.634817
+    Active elements (sum of masks): 896
+
+  🔄 GRADIENT ANALYSIS:
+    Max gradient norm:    111.166321
+    Avg gradient norm:    29.100123
+    Gradient clip value:  1.00
+    Is clipped:           YES
+
+  ⏱️  TOTALS:
+    Batch total time:     1768.73ms (1.7687s)
+    Avg Loss so far:      15781.453125
+
+======================================================================
+Batch 2/10 DETAILED BREAKDOWN:
+======================================================================
+Data Shapes: input=(512, 32, 19), control=(512, 6), mask=(512, 6)
+
+  DATA CONVERSION:
+    Shape check:          0.00ms
+    Input->JAX:           0.16ms
+    Controls->JAX:        0.04ms
+    Masks->JAX:           0.03ms
+    Dict creation:        0.03ms
+    TOTAL CONVERSION:     0.27ms
+
+  TRAINING STEP:
+    RNG split:            0.12ms
+    train_step() call:    1332.84ms
+    Block/sync:           64.09ms
+    Loss analysis:        1.26ms
+    Gradient analysis:    0.46ms
+    State access:         0.01ms
+
+  ⚠️  LOSS ANALYSIS (CRITICAL):
+    Total loss:           7438.873535
+    Per-sample loss stats:
+      Min:                0.000003
+      Max:                1571183.875000
+      Mean:               13205.732422
+      Std:                115008.875000
+    # of samples with loss > 100: 48
+    # of samples with loss > 1000: 32
+
+  📊 DATA STATISTICS:
+    Targets (controls):
+      Mean:               -1.616094
+      Std:                46.856762
+      Min:                -1251.811890
+      Max:                765.704834
+    Predictions:
+      Mean:               0.127512
+      Std:                0.911553
+      Min:                -3.497344
+      Max:                2.724839
+    Active elements (sum of masks): 909
+
+  🔄 GRADIENT ANALYSIS:
+    Max gradient norm:    69.312279
+    Avg gradient norm:    19.620931
+    Gradient clip value:  1.00
+    Is clipped:           YES
+
+  ⏱️  TOTALS:
+    Batch total time:     1399.06ms (1.3991s)
+    Avg Loss so far:      11610.163330
+
+======================================================================
+Batch 3/10 DETAILED BREAKDOWN:
+======================================================================
+Data Shapes: input=(512, 32, 19), control=(512, 6), mask=(512, 6)
+
+  DATA CONVERSION:
+    Shape check:          0.01ms
+    Input->JAX:           0.40ms
+    Controls->JAX:        0.05ms
+    Masks->JAX:           0.04ms
+    Dict creation:        0.01ms
+    TOTAL CONVERSION:     0.51ms
+
+  TRAINING STEP:
+    RNG split:            0.38ms
+    train_step() call:    1.27ms
+    Block/sync:           62.35ms
+    Loss analysis:        3.27ms
+    Gradient analysis:    0.45ms
+    State access:         0.00ms
+
+  ⚠️  LOSS ANALYSIS (CRITICAL):
+    Total loss:           38423.460938
+    Per-sample loss stats:
+      Min:                0.000000
+      Max:                16012928.000000
+      Mean:               66114.593750
+      Std:                792416.500000
+    # of samples with loss > 100: 49
+    # of samples with loss > 1000: 35
+
+  📊 DATA STATISTICS:
+    Targets (controls):
+      Mean:               1.430060
+      Std:                104.947105
+      Min:                -1626.545898
+      Max:                4001.563232
+    Predictions:
+      Mean:               0.126714
+      Std:                0.918593
+      Min:                -3.518893
+      Max:                3.217876
+    Active elements (sum of masks): 881
+
+  🔄 GRADIENT ANALYSIS:
+    Max gradient norm:    141.377045
+    Avg gradient norm:    46.163316
+    Gradient clip value:  1.00
+    Is clipped:           YES
+
+  ⏱️  TOTALS:
+    Batch total time:     68.24ms (0.0682s)
+    Avg Loss so far:      20547.929199
+
+======================================================================
+Batch 4/10 DETAILED BREAKDOWN:
+======================================================================
+Data Shapes: input=(512, 32, 19), control=(512, 6), mask=(512, 6)
+
+  DATA CONVERSION:
+    Shape check:          0.00ms
+    Input->JAX:           0.13ms
+    Controls->JAX:        0.05ms
+    Masks->JAX:           0.04ms
+    Dict creation:        0.01ms
+    TOTAL CONVERSION:     0.23ms
+
+  TRAINING STEP:
+    RNG split:            0.11ms
+    train_step() call:    0.97ms
+    Block/sync:           61.57ms
+    Loss analysis:        0.21ms
+    Gradient analysis:    0.98ms
+    State access:         0.00ms
+
+  ⚠️  LOSS ANALYSIS (CRITICAL):
+    Total loss:           24365.281250
+    Per-sample loss stats:
+      Min:                0.000000
+      Max:                5574874.500000
+      Mean:               41971.394531
+      Std:                337148.531250
+    # of samples with loss > 100: 58
+    # of samples with loss > 1000: 47
+
+  📊 DATA STATISTICS:
+    Targets (controls):
+      Mean:               -2.778774
+      Std:                83.571243
+      Min:                -2361.354492
+      Max:                1504.774658
+    Predictions:
+      Mean:               0.127833
+      Std:                0.899527
+      Min:                -2.907699
+      Max:                2.762210
+    Active elements (sum of masks): 882
+
+  🔄 GRADIENT ANALYSIS:
+    Max gradient norm:    136.606552
+    Avg gradient norm:    40.807591
+    Gradient clip value:  1.00
+    Is clipped:           YES
+
+  ⏱️  TOTALS:
+    Batch total time:     64.07ms (0.0641s)
+    Avg Loss so far:      21502.267212
+
+======================================================================
+Batch 5/10 DETAILED BREAKDOWN:
+======================================================================
+Data Shapes: input=(512, 32, 19), control=(512, 6), mask=(512, 6)
+
+  DATA CONVERSION:
+    Shape check:          0.00ms
+    Input->JAX:           0.17ms
+    Controls->JAX:        0.08ms
+    Masks->JAX:           0.05ms
+    Dict creation:        0.01ms
+    TOTAL CONVERSION:     0.31ms
+
+  TRAINING STEP:
+    RNG split:            0.13ms
+    train_step() call:    1.00ms
+    Block/sync:           68.27ms
+    Loss analysis:        0.25ms
+    Gradient analysis:    0.41ms
+    State access:         0.00ms
+
+  ⚠️  LOSS ANALYSIS (CRITICAL):
+    Total loss:           21474.253906
+    Per-sample loss stats:
+      Min:                0.000002
+      Max:                6849215.500000
+      Mean:               39214.820312
+      Std:                380849.500000
+    # of samples with loss > 100: 42
+    # of samples with loss > 1000: 34
+
+  📊 DATA STATISTICS:
+    Targets (controls):
+      Mean:               1.696959
+      Std:                80.820488
+      Min:                -2145.587646
+      Max:                2616.526855
+    Predictions:
+      Mean:               0.158905
+      Std:                0.887796
+      Min:                -3.411068
+      Max:                2.684413
+    Active elements (sum of masks): 935
+
+  🔄 GRADIENT ANALYSIS:
+    Max gradient norm:    60.262054
+    Avg gradient norm:    18.712061
+    Gradient clip value:  1.00
+    Is clipped:           YES
+
+  ⏱️  TOTALS:
+    Batch total time:     70.37ms (0.0704s)
+    Avg Loss so far:      21496.664551
+
+======================================================================
+Batch 6/10 DETAILED BREAKDOWN:
+======================================================================
+Data Shapes: input=(512, 32, 19), control=(512, 6), mask=(512, 6)
+
+  DATA CONVERSION:
+    Shape check:          0.00ms
+    Input->JAX:           0.15ms
+    Controls->JAX:        0.05ms
+    Masks->JAX:           0.04ms
+    Dict creation:        0.27ms
+    TOTAL CONVERSION:     0.51ms
+
+  TRAINING STEP:
+    RNG split:            0.11ms
+    train_step() call:    0.55ms
+    Block/sync:           63.59ms
+    Loss analysis:        0.28ms
+    Gradient analysis:    0.59ms
+    State access:         0.00ms
+
+  ⚠️  LOSS ANALYSIS (CRITICAL):
+    Total loss:           4064.527344
+    Per-sample loss stats:
+      Min:                0.000028
+      Max:                962015.812500
+      Mean:               7024.773926
+      Std:                59946.406250
+    # of samples with loss > 100: 54
+    # of samples with loss > 1000: 35
+
+  📊 DATA STATISTICS:
+    Targets (controls):
+      Mean:               1.681162
+      Std:                34.182293
+      Min:                -139.408524
+      Max:                982.466553
+    Predictions:
+      Mean:               0.115812
+      Std:                0.896292
+      Min:                -3.234731
+      Max:                3.064636
+    Active elements (sum of masks): 885
+
+  🔄 GRADIENT ANALYSIS:
+    Max gradient norm:    44.468956
+    Avg gradient norm:    12.403160
+    Gradient clip value:  1.00
+    Is clipped:           YES
+
+  ⏱️  TOTALS:
+    Batch total time:     65.63ms (0.0656s)
+    Avg Loss so far:      18591.308350
+
+======================================================================
+Batch 7/10 DETAILED BREAKDOWN:
+======================================================================
+Data Shapes: input=(512, 32, 19), control=(512, 6), mask=(512, 6)
+
+  DATA CONVERSION:
+    Shape check:          0.00ms
+    Input->JAX:           0.15ms
+    Controls->JAX:        0.05ms
+    Masks->JAX:           0.04ms
+    Dict creation:        0.01ms
+    TOTAL CONVERSION:     0.25ms
+
+  TRAINING STEP:
+    RNG split:            0.21ms
+    train_step() call:    0.90ms
+    Block/sync:           63.84ms
+    Loss analysis:        0.22ms
+    Gradient analysis:    0.41ms
+    State access:         0.00ms
+
+  ⚠️  LOSS ANALYSIS (CRITICAL):
+    Total loss:           21292.152344
+    Per-sample loss stats:
+      Min:                0.000035
+      Max:                5364137.500000
+      Mean:               37302.089844
+      Std:                308059.312500
+    # of samples with loss > 100: 61
+    # of samples with loss > 1000: 42
+
+  📊 DATA STATISTICS:
+    Targets (controls):
+      Mean:               -2.726562
+      Std:                78.766151
+      Min:                -2315.164551
+      Max:                1348.738647
+    Predictions:
+      Mean:               0.128430
+      Std:                0.905006
+      Min:                -2.928850
+      Max:                2.958390
+    Active elements (sum of masks): 897
+
+  🔄 GRADIENT ANALYSIS:
+    Max gradient norm:    133.690979
+    Avg gradient norm:    43.042550
+    Gradient clip value:  1.00
+    Is clipped:           YES
+
+  ⏱️  TOTALS:
+    Batch total time:     65.83ms (0.0658s)
+    Avg Loss so far:      18977.143206
+
+======================================================================
+Batch 8/10 DETAILED BREAKDOWN:
+======================================================================
+Data Shapes: input=(512, 32, 19), control=(512, 6), mask=(512, 6)
+
+  DATA CONVERSION:
+    Shape check:          0.00ms
+    Input->JAX:           0.13ms
+    Controls->JAX:        0.05ms
+    Masks->JAX:           0.04ms
+    Dict creation:        0.01ms
+    TOTAL CONVERSION:     0.22ms
+
+  TRAINING STEP:
+    RNG split:            0.12ms
+    train_step() call:    1.46ms
+    Block/sync:           60.13ms
+    Loss analysis:        0.22ms
+    Gradient analysis:    0.46ms
+    State access:         0.00ms
+
+  ⚠️  LOSS ANALYSIS (CRITICAL):
+    Total loss:           31413.164062
+    Per-sample loss stats:
+      Min:                0.000065
+      Max:                9738761.000000
+      Mean:               54726.742188
+      Std:                577183.750000
+    # of samples with loss > 100: 59
+    # of samples with loss > 1000: 43
+
+  📊 DATA STATISTICS:
+    Targets (controls):
+      Mean:               -1.159288
+      Std:                95.462959
+      Min:                -3120.135010
+      Max:                1338.798584
+    Predictions:
+      Mean:               0.134690
+      Std:                0.908691
+      Min:                -3.022047
+      Max:                2.729980
+    Active elements (sum of masks): 892
+
+  🔄 GRADIENT ANALYSIS:
+    Max gradient norm:    119.370316
+    Avg gradient norm:    35.378798
+    Gradient clip value:  1.00
+    Is clipped:           YES
+
+  ⏱️  TOTALS:
+    Batch total time:     62.60ms (0.0626s)
+    Avg Loss so far:      20531.645813
+
+======================================================================
+Batch 9/10 DETAILED BREAKDOWN:
+======================================================================
+Data Shapes: input=(512, 32, 19), control=(512, 6), mask=(512, 6)
+
+  DATA CONVERSION:
+    Shape check:          0.00ms
+    Input->JAX:           0.15ms
+    Controls->JAX:        0.04ms
+    Masks->JAX:           0.04ms
+    Dict creation:        0.01ms
+    TOTAL CONVERSION:     0.24ms
+
+  TRAINING STEP:
+    RNG split:            0.10ms
+    train_step() call:    0.63ms
+    Block/sync:           65.37ms
+    Loss analysis:        0.25ms
+    Gradient analysis:    0.45ms
+    State access:         0.00ms
+
+  ⚠️  LOSS ANALYSIS (CRITICAL):
+    Total loss:           8893.780273
+    Per-sample loss stats:
+      Min:                0.000084
+      Max:                2803864.000000
+      Mean:               15736.959961
+      Std:                167621.890625
+    # of samples with loss > 100: 35
+    # of samples with loss > 1000: 19
+
+  📊 DATA STATISTICS:
+    Targets (controls):
+      Mean:               -0.989197
+      Std:                51.178638
+      Min:                -1674.317383
+      Max:                736.300415
+    Predictions:
+      Mean:               0.120550
+      Std:                0.923544
+      Min:                -3.744742
+      Max:                2.728364
+    Active elements (sum of masks): 906
+
+  🔄 GRADIENT ANALYSIS:
+    Max gradient norm:    59.359169
+    Avg gradient norm:    17.086291
+    Gradient clip value:  1.00
+    Is clipped:           YES
+
+  ⏱️  TOTALS:
+    Batch total time:     67.06ms (0.0671s)
+    Avg Loss so far:      19238.549642
+
+======================================================================
+Batch 10/10 DETAILED BREAKDOWN:
+======================================================================
+Data Shapes: input=(512, 32, 19), control=(512, 6), mask=(512, 6)
+
+  DATA CONVERSION:
+    Shape check:          0.00ms
+    Input->JAX:           0.15ms
+    Controls->JAX:        0.04ms
+    Masks->JAX:           0.03ms
+    Dict creation:        0.01ms
+    TOTAL CONVERSION:     0.23ms
+
+  TRAINING STEP:
+    RNG split:            0.10ms
+    train_step() call:    0.72ms
+    Block/sync:           60.93ms
+    Loss analysis:        0.27ms
+    Gradient analysis:    0.42ms
+    State access:         0.00ms
+
+  ⚠️  LOSS ANALYSIS (CRITICAL):
+    Total loss:           9143.598633
+    Per-sample loss stats:
+      Min:                0.000002
+      Max:                1537592.750000
+      Mean:               15929.056641
+      Std:                114265.039062
+    # of samples with loss > 100: 51
+    # of samples with loss > 1000: 33
+
+  📊 DATA STATISTICS:
+    Targets (controls):
+      Mean:               -0.413146
+      Std:                51.496433
+      Min:                -1239.252319
+      Max:                1113.660156
+    Predictions:
+      Mean:               0.126571
+      Std:                0.921937
+      Min:                -3.604854
+      Max:                2.919600
+    Active elements (sum of masks): 892
+
+  🔄 GRADIENT ANALYSIS:
+    Max gradient norm:    110.767006
+    Avg gradient norm:    32.652711
+    Gradient clip value:  1.00
+    Is clipped:           YES
+
+  ⏱️  TOTALS:
+    Batch total time:     62.68ms (0.0627s)
+    Avg Loss so far:      18229.054541
+
+================================================================================
+DEBUG: Stopping after 10 batches for analysis
+================================================================================
+
+DEBUG: Skipping validation to save time
+
+================================================================================
+Epoch 1/20 Summary
+================================================================================
+  Train Loss:     18229.054541
+  Val Loss:       18229.054541
+  Epoch Time:     2.24 min (134.4s)
+  Elapsed Time:   2.34 min
+  Checkpoint saved: ./models/best_model_jax.pkl
+  ✓ New best model! Val loss: 18229.054541
+----------------------------------------------------------------------
+
+DEBUG: Exiting after 1 epoch (10 batches) for analysis
+
+DEBUG: Skipping checkpoint saves
+
+================================================================================
+============================== TRAINING COMPLETE! ==============================
+================================================================================
+
+                                 FINAL RESULTS                                  
+================================================================================
+  Best Validation Loss:        18229.054541
+  Final Training Loss:         18229.054541
+  Final Validation Loss:       18229.054541
+
+                               TIMING STATISTICS                                
+================================================================================
+  Total Training Time:         2.34 minutes (0.04 hours)
+  Average Epoch Time:          2.24 minutes
+  Total Epochs:                20
+  Device:                      cpu
+
+                                  OUTPUT FILES                                  
+================================================================================
+  Best Model:                  ./models/best_model_jax.pkl
+  Final Model:                 ./models/final_model_jax.pkl
+  Training History:            ./logs/training_history_jax.pkl
+  Normalization Stats:         ./models/normalization_stats_jax.pkl
+
+================================================================================
+====================== ✓ Training completed successfully! ======================
+================================================================================
+

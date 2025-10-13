@@ -1,0 +1,132 @@
+================================================================================
+                           LQR DATA GENERATION DEBUG                            
+================================================================================
+
+Creating ONE variant from each system family...
+Simulating LQR control with NO UNCERTAINTY, NO NOISE
+Simulation time: 10.0s, dt: 0.02s, steps: 500
+
+[1/35] Processing MassSpringDamper...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/MassSpringDamper_debug.png
+  ✓ Stable: True, Max|eig|: 1.9343, Max|u|: 2.15e+00
+[2/35] Processing SimplePendulum...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/SimplePendulum_debug.png
+  ✓ Stable: True, Max|eig|: 3.2835, Max|u|: 6.36e+00
+[3/35] Processing InvertedPendulum...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/InvertedPendulum_debug.png
+  ✓ Stable: True, Max|eig|: 7.7178, Max|u|: 6.33e-01
+[4/35] Processing CartPole...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/CartPole_debug.png
+  ✓ Stable: True, Max|eig|: 5.9723, Max|u|: 1.05e+01
+[5/35] Processing DoublePendulum...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/DoublePendulum_debug.png
+  ✓ Stable: True, Max|eig|: 5.9130, Max|u|: 1.19e+02
+[6/35] Processing Acrobot...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/Acrobot_debug.png
+  ✓ Stable: True, Max|eig|: 5.1687, Max|u|: 1.05e+02
+[7/35] Processing FurutaPendulum...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/FurutaPendulum_debug.png
+  ✓ Stable: True, Max|eig|: 75.5569, Max|u|: 2.12e+00
+[8/35] Processing BallAndBeam...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/BallAndBeam_debug.png
+  ✓ Stable: True, Max|eig|: 2.6256, Max|u|: 4.44e+00
+[9/35] Processing BallAndPlate...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/BallAndPlate_debug.png
+  ✓ Stable: True, Max|eig|: 3.5514, Max|u|: 4.34e+00
+[10/35] Processing ReactionWheelPendulum...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/ReactionWheelPendulum_debug.png
+  ✓ Stable: True, Max|eig|: 55.2387, Max|u|: 3.16e-01
+[11/35] Processing FlexibleBeam...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/FlexibleBeam_debug.png
+  ✗ Stable: False, Max|eig|: 579.8502, Max|u|: 7.29e+01
+[12/35] Processing MagneticLevitation...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/MagneticLevitation_debug.png
+  ✓ Stable: True, Max|eig|: 99.9326, Max|u|: 4.21e+00
+[13/35] Processing SuspensionSystem...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/SuspensionSystem_debug.png
+  ✗ Stable: False, Max|eig|: 61.5640, Max|u|: 2.51e+01
+[14/35] Processing TwoLinkArm...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/TwoLinkArm_debug.png
+  ✓ Stable: True, Max|eig|: 26.0106, Max|u|: 5.77e+00
+[15/35] Processing ThreeLinkManipulator...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/ThreeLinkManipulator_debug.png
+  ✓ Stable: True, Max|eig|: 4.8228, Max|u|: 2.51e+00
+[16/35] Processing SixDOFManipulator...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/SixDOFManipulator_debug.png
+  ✓ Stable: True, Max|eig|: 42.6637, Max|u|: 5.71e-01
+[17/35] Processing DifferentialDriveRobot...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/DifferentialDriveRobot_debug.png
+  ✓ Stable: True, Max|eig|: 0.4420, Max|u|: 7.30e+00
+[18/35] Processing OmnidirectionalRobot...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/OmnidirectionalRobot_debug.png
+  ✓ Stable: True, Max|eig|: 1.0000, Max|u|: 1.81e+00
+[19/35] Processing UnicycleRobot...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/UnicycleRobot_debug.png
+  ✓ Stable: True, Max|eig|: 1.7783, Max|u|: 8.69e+00
+[20/35] Processing FlexibleJointRobot...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/FlexibleJointRobot_debug.png
+  ✗ Stable: False, Max|eig|: 46.8991, Max|u|: 1.34e+05
+[21/35] Processing CableDrivenRobot...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/CableDrivenRobot_debug.png
+  ✓ Stable: True, Max|eig|: 0.8274, Max|u|: 2.23e+00
+[22/35] Processing DualArmRobot...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/DualArmRobot_debug.png
+  ✓ Stable: True, Max|eig|: 34.9171, Max|u|: 3.54e-01
+[23/35] Processing SCARARobot...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/SCARARobot_debug.png
+  ✓ Stable: True, Max|eig|: 43.4980, Max|u|: 1.15e+00
+[24/35] Processing PlanarBiped...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/PlanarBiped_debug.png
+  ✓ Stable: True, Max|eig|: 3.1513, Max|u|: 1.65e+02
+[25/35] Processing SegwayRobot...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/SegwayRobot_debug.png
+  ✓ Stable: True, Max|eig|: 0.4323, Max|u|: 1.11e+03
+[26/35] Processing QuadrotorHover...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/QuadrotorHover_debug.png
+  ✓ Stable: True, Max|eig|: 33.1820, Max|u|: 5.66e+00
+[27/35] Processing FixedWingAircraft...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/FixedWingAircraft_debug.png
+  ✓ Stable: True, Max|eig|: 8.1300, Max|u|: 1.39e+00
+[28/35] Processing VTOLLinearized...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/VTOLLinearized_debug.png
+  ✓ Stable: True, Max|eig|: 19.7460, Max|u|: 4.13e+00
+[29/35] Processing VehicleLateralDynamics...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/VehicleLateralDynamics_debug.png
+  ✓ Stable: True, Max|eig|: 5.9195, Max|u|: 2.58e+00
+[30/35] Processing LongitudinalCruiseControl...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/LongitudinalCruiseControl_debug.png
+  ✓ Stable: True, Max|eig|: 0.6548, Max|u|: 1.26e+00
+[31/35] Processing PlatooningModel...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/PlatooningModel_debug.png
+  ✓ Stable: True, Max|eig|: 2.2798, Max|u|: 3.52e+01
+[32/35] Processing DCMotor...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/DCMotor_debug.png
+  ✓ Stable: True, Max|eig|: 9.9956, Max|u|: 1.89e+00
+[33/35] Processing ChemicalReactor...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/ChemicalReactor_debug.png
+  ✓ Stable: True, Max|eig|: 3.9922, Max|u|: 1.84e+01
+[34/35] Processing LotkaVolterra...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/LotkaVolterra_debug.png
+  ✓ Stable: True, Max|eig|: 1.6719, Max|u|: 5.37e+00
+[35/35] Processing DoubleIntegrator...
+  ✓ Saved: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug/DoubleIntegrator_debug.png
+  ✓ Stable: True, Max|eig|: 1.7783, Max|u|: 3.35e+00
+
+================================================================================
+SUMMARY
+================================================================================
+
+Total systems: 35
+Stable:        32
+Unstable:      3
+
+Systems with large control signals (|u| > 100):
+  - DoublePendulum: Max|u| = 1.19e+02
+  - Acrobot: Max|u| = 1.05e+02
+  - FlexibleJointRobot: Max|u| = 1.34e+05
+  - PlanarBiped: Max|u| = 1.65e+02
+  - SegwayRobot: Max|u| = 1.11e+03
+
+================================================================================
+All plots saved in: /Users/turki/Desktop/My_PhD/highway_merging/ablation/universal_lqr/jax_implementation/lqr_debug
+================================================================================

@@ -1,0 +1,92 @@
+================================================================================
+    QUICK START: Training on Great Lakes GPU
+================================================================================
+
+1. TRANSFER FILES TO GREAT LAKES:
+   ---------------------------------
+   From your Mac:
+   
+   scp -r jax_implementation YOUR_UNIQNAME@greatlakes.arc-ts.umich.edu:~/
+
+2. SETUP ENVIRONMENT (One-time):
+   ------------------------------
+   ssh YOUR_UNIQNAME@greatlakes.arc-ts.umich.edu
+   
+   module load cuda/11.8 python/3.10
+   python -m venv jax_gpu_env
+   source jax_gpu_env/bin/activate
+   
+   pip install --upgrade pip
+   pip install --upgrade "jax[cuda11_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+   pip install flax optax h5py tqdm matplotlib
+   
+   # Verify GPU
+   python -c "import jax; print(jax.devices())"
+
+3. EDIT train_gpu.slurm:
+   ----------------------
+   nano train_gpu.slurm
+   
+   # Replace:
+   #   YOUR_ACCOUNT    -> Your Great Lakes account (e.g., "stats_dept1")
+   #   YOUR_UNIQNAME   -> Your uniqname (e.g., "jsmith")
+   #   YOUR_EMAIL      -> Your email (e.g., "jsmith@umich.edu")
+
+4. EDIT train_jax.py to use GPU config:
+   ------------------------------------
+   nano train_jax.py
+   
+   # Change line:
+   from config import (
+   
+   # To:
+   from config_gpu import (
+
+5. SUBMIT JOB:
+   ------------
+   cd jax_implementation
+   mkdir -p logs
+   sbatch train_gpu.slurm
+
+6. MONITOR:
+   ---------
+   # Check job status
+   squeue -u YOUR_UNIQNAME
+   
+   # Watch output live
+   tail -f logs/train_XXXXX.out    # Replace XXXXX with job ID
+
+7. DOWNLOAD RESULTS:
+   ------------------
+   # From your Mac
+   scp YOUR_UNIQNAME@greatlakes.arc-ts.umich.edu:~/jax_implementation/models/best_model_jax.pkl ./models/
+
+================================================================================
+EXPECTED RESULTS:
+================================================================================
+
+V100 GPU (request with: --gpus-per-node=v100:1)
+  - Training time: ~3-4 hours
+  - Speedup: ~30x vs M4 CPU
+
+A100 GPU (request with: --gpus-per-node=a100:1)
+  - Training time: ~1-2 hours  
+  - Speedup: ~60x vs M4 CPU
+
+================================================================================
+TROUBLESHOOTING:
+================================================================================
+
+Q: "No GPU detected"
+A: Run: module load cuda/11.8
+   Reinstall JAX with GPU support
+
+Q: "Out of memory"
+A: Edit config_gpu.py, set batch_size=1024 (or 512)
+
+Q: "Job queued for a long time"
+A: Try different GPU: --gpus-per-node=v100:1
+   Or check: squeue -p gpu
+
+================================================================================
+

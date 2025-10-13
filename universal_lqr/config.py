@@ -13,14 +13,14 @@ import numpy as np
 SAVE_NEW_DATA = True
 
 # Number of trajectories to generate per system variant
-NUM_TRAJECTORIES_PER_VARIANT = 100
+NUM_TRAJECTORIES_PER_VARIANT = 500
 
 # Time parameters
 TIME_HORIZON = 50.0  # seconds (2500 timesteps per trajectory)
 DT = 0.02   # sampling time (50 Hz)
 
 # Number of variants per system family (different parameters)
-NUM_VARIANTS_PER_SYSTEM = 10
+NUM_VARIANTS_PER_SYSTEM = 50
 
 # Parameter uncertainty range (±10% - reduced for numerical stability)
 PARAMETER_UNCERTAINTY = 0.10
@@ -37,10 +37,13 @@ PROCESS_NOISE_STD = 0.01
 SEQUENCE_LENGTH = 32  # Reduced from 64 for faster training
 
 # Sequence stride (how many timesteps to skip between consecutive sequences)
-# stride=1: maximum overlap (72M sequences, very slow)
-# stride=16: moderate overlap - 50% (4.5M sequences, balanced) [RECOMMENDED]
-# stride=32: no overlap (2.3M sequences, fastest training)
-SEQUENCE_STRIDE = 1  # Good balance between coverage and training speed
+# stride=1: maximum overlap (~2.16B sequences, too much)
+# stride=21: optimized for 100M sequences with 34 systems × 50 variants × 500 trajectories [CURRENT]
+# stride=50: ~43M sequences
+# stride=72: ~30M sequences
+# Formula: num_sequences = num_systems × num_variants × num_trajs × ((T - seq_len) / stride)
+# For 100M: 34 × 50 × 500 × ((2500 - 32) / stride) = 100M → stride ≈ 21
+SEQUENCE_STRIDE = 21  # Optimized for ~100M input-output pairs
 
 # System dimension parameters (for padding and masking)
 MAX_STATE_DIM = 12  # Maximum state dimension across all systems
@@ -55,12 +58,12 @@ N_X_ENCODING_BITS = 4  # 4 bits can represent 0-15 (we need 0-12)
 # Encoding: [n_u_binary, n_x_binary]
 DIMENSION_ENCODING_SIZE = N_U_ENCODING_BITS + N_X_ENCODING_BITS  # 7 bits total
 
-# Transformer architecture
+# Transformer architecture (optimized for ~200k parameters)
 TRANSFORMER_CONFIG = {
-    'd_model': 256,          # Embedding dimension
-    'n_heads': 8,            # Number of attention heads
-    'n_layers': 6,           # Number of transformer blocks
-    'd_ff': 1024,            # Feed-forward dimension
+    'd_model': 64,           # Embedding dimension (reduced for efficiency)
+    'n_heads': 4,            # Number of attention heads
+    'n_layers': 4,           # Number of transformer blocks
+    'd_ff': 256,             # Feed-forward dimension (4x d_model)
     'dropout': 0.1,          # Dropout rate
     'max_seq_len': 128,      # Maximum sequence length (should be >= SEQUENCE_LENGTH)
     
@@ -74,13 +77,14 @@ TRANSFORMER_CONFIG = {
 # ============================================================================
 
 TRAINING_CONFIG = {
-    'batch_size': 1024,  # Large batch for 3x RTX 2080 Ti (11GB each) = ~3072 effective batch
-    'learning_rate': 2e-4,  # Increased learning rate for larger batch size
-    'num_epochs': 30,  # Reduced from 100 (30 is usually sufficient)
-    'warmup_steps': 1000,
+    'batch_size': 256,  # CPU-optimized batch size (use 2048 for GPU)
+    'learning_rate': 3e-4,  # AdamW learning rate
+    'num_epochs': 50,  # More epochs for larger dataset
+    'warmup_steps': 2000,
     'gradient_clip': 1.0,
-    'validation_split': 0.15,
+    'validation_split': 0.15,  # 15% validation as requested
     'save_every': 5,  # Save checkpoint every N epochs
+    'weight_decay': 1e-4,  # L2 regularization
 }
 
 # Data normalization strategy

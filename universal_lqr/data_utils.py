@@ -1,9 +1,10 @@
 """
 Utility functions for data preprocessing and handling variable-dimensional systems
+(JAX version - uses NumPy for data preprocessing, converted to JAX during training)
 """
 
 import numpy as np
-import torch
+import jax.numpy as jnp
 from config import (
     MAX_STATE_DIM, MAX_INPUT_DIM, 
     N_U_ENCODING_BITS, N_X_ENCODING_BITS,
@@ -182,10 +183,12 @@ def prepare_training_batch(state_sequences, control_sequences, n_u_list, n_x_lis
     
     Returns:
         dict with:
-            'input_sequences': torch.Tensor of shape (batch, seq_len, input_dim)
-            'target_controls': torch.Tensor of shape (batch, seq_len, MAX_INPUT_DIM)
-            'control_masks': torch.Tensor of shape (batch, MAX_INPUT_DIM)
-            'padding_masks': torch.Tensor of shape (batch, seq_len)
+            'input_sequences': numpy array of shape (batch, seq_len, input_dim)
+            'target_controls': numpy array of shape (batch, seq_len, MAX_INPUT_DIM)
+            'control_masks': numpy array of shape (batch, MAX_INPUT_DIM)
+            'padding_masks': numpy array of shape (batch, seq_len)
+        
+        Note: Arrays are numpy - convert to JAX in data loader as needed
     """
     batch_size = len(state_sequences)
     
@@ -215,12 +218,12 @@ def prepare_training_batch(state_sequences, control_sequences, n_u_list, n_x_lis
         # Create padding mask (which timesteps are valid)
         padding_masks[i, :seq_len] = 1.0
     
-    # Convert to torch tensors
+    # Return as numpy arrays (will be converted to JAX in data loader)
     batch = {
-        'input_sequences': torch.from_numpy(input_sequences),
-        'target_controls': torch.from_numpy(target_controls),
-        'control_masks': torch.from_numpy(control_masks),
-        'padding_masks': torch.from_numpy(padding_masks)
+        'input_sequences': input_sequences,
+        'target_controls': target_controls,
+        'control_masks': control_masks,
+        'padding_masks': padding_masks
     }
     
     return batch
@@ -231,21 +234,19 @@ def extract_active_control(control_padded, n_u):
     Extract only the active control dimensions from padded control.
     
     Args:
-        control_padded: numpy array or torch.Tensor of shape (..., MAX_INPUT_DIM)
+        control_padded: numpy or JAX array of shape (..., MAX_INPUT_DIM)
         n_u: int - actual control dimension
     
     Returns:
         control: array of shape (..., n_u) with only active dimensions
     """
-    if isinstance(control_padded, torch.Tensor):
-        return control_padded[..., :n_u]
-    else:
-        return control_padded[..., :n_u]
+    # Works for both numpy and JAX arrays
+    return control_padded[..., :n_u]
 
 
 if __name__ == '__main__':
     print("=" * 70)
-    print("Testing Data Utility Functions")
+    print("Testing Data Utility Functions (JAX version)")
     print("=" * 70)
     
     # Test dimension encoding
@@ -311,10 +312,16 @@ if __name__ == '__main__':
     # Verify masks
     print("\n   Control masks:")
     for i, n_u in enumerate(n_u_list):
-        mask_sum = batch['control_masks'][i].sum().item()
+        mask_sum = int(batch['control_masks'][i].sum())
         print(f"      System {i+1} (n_u={n_u}): {mask_sum} active dims")
     
+    # Test JAX conversion
+    print("\n[TEST 6] JAX conversion")
+    jax_array = jnp.array(batch['input_sequences'][0])
+    print(f"   Converted to JAX: {type(jax_array)}")
+    print(f"   Shape preserved: {jax_array.shape}")
+    
     print("\n" + "=" * 70)
-    print("[OK] All tests passed!")
+    print("✓ All tests passed!")
     print("=" * 70)
 

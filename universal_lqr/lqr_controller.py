@@ -1,10 +1,10 @@
 """
-LQR Controller Implementation with Stability Verification
+LQR Controller Implementation with Stability Verification (JAX version)
 """
 
-import numpy as np
-from scipy import linalg
-from config import LQR_STABILITY_CHECK_TOLERANCE
+import jax.numpy as jnp
+from jax import jit
+import scipy.linalg as sp_linalg  # Still use scipy for ARE solving
 
 
 def compute_lqr_gain(A, B, Q, R):
@@ -15,30 +15,42 @@ def compute_lqr_gain(A, B, Q, R):
     The optimal control is u = -Kx
     
     Args:
-        A: State matrix (n x n)
-        B: Input matrix (n x m)
-        Q: State cost matrix (n x n)
-        R: Input cost matrix (m x m)
+        A: State matrix (n x n) - can be JAX or numpy array
+        B: Input matrix (n x m) - can be JAX or numpy array
+        Q: State cost matrix (n x n) - can be JAX or numpy array
+        R: Input cost matrix (m x m) - can be JAX or numpy array
     
     Returns:
-        K: LQR gain matrix (m x n)
-        P: Solution to the Riccati equation
+        K: LQR gain matrix (m x n) - JAX array
+        P: Solution to the Riccati equation - JAX array
         success: Boolean indicating if LQR was successfully computed
     """
+    import numpy as np
+    
     try:
+        # Convert to numpy for scipy
+        A_np = np.array(A)
+        B_np = np.array(B)
+        Q_np = np.array(Q)
+        R_np = np.array(R)
+        
         # Solve continuous-time algebraic Riccati equation
-        P = linalg.solve_continuous_are(A, B, Q, R)
+        P = sp_linalg.solve_continuous_are(A_np, B_np, Q_np, R_np)
         
         # Compute LQR gain
-        K = linalg.inv(R) @ B.T @ P
+        K = sp_linalg.inv(R_np) @ B_np.T @ P
         
-        return K, P, True
+        # Convert back to JAX arrays
+        K_jax = jnp.array(K)
+        P_jax = jnp.array(P)
+        
+        return K_jax, P_jax, True
     except Exception as e:
         print(f"LQR computation failed: {e}")
         return None, None, False
 
 
-def verify_stability(A, B, K, tolerance=LQR_STABILITY_CHECK_TOLERANCE):
+def verify_stability(A, B, K, tolerance=1e-6):
     """
     Verify that the closed-loop system is stable.
     
@@ -54,12 +66,15 @@ def verify_stability(A, B, K, tolerance=LQR_STABILITY_CHECK_TOLERANCE):
     Returns:
         is_stable: Boolean
         max_real_eigenvalue: Maximum real part of eigenvalues
+        eigenvalues: All eigenvalues
     """
+    import numpy as np
+    
     # Closed-loop system matrix
-    A_cl = A - B @ K
+    A_cl = np.array(A) - np.array(B) @ np.array(K)
     
     # Compute eigenvalues
-    eigenvalues = linalg.eigvals(A_cl)
+    eigenvalues = sp_linalg.eigvals(A_cl)
     
     # Check if all eigenvalues have negative real parts
     max_real_part = np.max(np.real(eigenvalues))
@@ -81,9 +96,9 @@ def design_lqr(A, B, Q_weight=1.0, R_weight=0.1, custom_Q=None, custom_R=None):
         custom_R: Custom R matrix (optional)
     
     Returns:
-        K: LQR gain matrix
-        Q: State cost matrix used
-        R: Input cost matrix used
+        K: LQR gain matrix - JAX array
+        Q: State cost matrix used - JAX array
+        R: Input cost matrix used - JAX array
         success: Boolean indicating success
     """
     n_states = A.shape[0]
@@ -93,13 +108,13 @@ def design_lqr(A, B, Q_weight=1.0, R_weight=0.1, custom_Q=None, custom_R=None):
     if custom_Q is not None:
         Q = custom_Q
     else:
-        Q = Q_weight * np.eye(n_states)
+        Q = Q_weight * jnp.eye(n_states)
     
     # Create R matrix
     if custom_R is not None:
         R = custom_R
     else:
-        R = R_weight * np.eye(n_inputs)
+        R = R_weight * jnp.eye(n_inputs)
     
     # Compute LQR gain
     K, P, success = compute_lqr_gain(A, B, Q, R)
@@ -118,10 +133,50 @@ def design_lqr(A, B, Q_weight=1.0, R_weight=0.1, custom_Q=None, custom_R=None):
     return K, Q, R, True
 
 
+@jit
+def simulate_lqr_step(x, A, B, K, dt, noise_std, key):
+    """
+    Single step of LQR-controlled system simulation (JIT-compiled).
+    
+    Args:
+        x: Current state
+        A: State matrix
+        B: Input matrix
+        K: LQR gain
+        dt: Time step
+        noise_std: Process noise standard deviation
+        key: JAX random key
+    
+    Returns:
+        x_next: Next state
+        u: Control input
+        key: Updated random key
+    """
+    from jax import random
+    
+    # Compute control
+    u = -K @ x
+    
+    # RK4 integration
+    k1 = A @ x + B @ u
+    k2 = A @ (x + 0.5 * dt * k1) + B @ u
+    k3 = A @ (x + 0.5 * dt * k2) + B @ u
+    k4 = A @ (x + dt * k3) + B @ u
+    
+    # Add process noise
+    key, subkey = random.split(key)
+    noise = random.normal(subkey, shape=x.shape) * noise_std
+    
+    # RK4 update
+    x_next = x + (dt / 6.0) * (k1 + 2*k2 + 2*k3 + k4) + noise
+    
+    return x_next, u, key
+
+
 def simulate_lqr_controlled_system(A, B, K, x0, t_span, dt, process_noise_std=0.0, 
                                    uncertain_A=None, uncertain_B=None,
                                    early_stop=True, settling_threshold=0.01, 
-                                   settling_duration=1.0):
+                                   settling_duration=1.0, rng_key=None):
     """
     Simulate the LQR-controlled system with optional uncertainties and noise.
     
@@ -138,12 +193,19 @@ def simulate_lqr_controlled_system(A, B, K, x0, t_span, dt, process_noise_std=0.
         early_stop: Enable early stopping when system settles
         settling_threshold: State norm threshold for settling
         settling_duration: Time duration system must stay settled before stopping
+        rng_key: JAX random key
     
     Returns:
         t: Time vector
         X: State trajectory (time x n_states)
         U: Control trajectory (time x n_inputs)
     """
+    import numpy as np
+    from jax import random
+    
+    if rng_key is None:
+        rng_key = random.PRNGKey(0)
+    
     # Use uncertain matrices if provided, otherwise use nominal
     A_sim = uncertain_A if uncertain_A is not None else A
     B_sim = uncertain_B if uncertain_B is not None else B
@@ -158,51 +220,48 @@ def simulate_lqr_controlled_system(A, B, K, x0, t_span, dt, process_noise_std=0.
     X = np.zeros((n_steps_max, n_states))
     U = np.zeros((n_steps_max, n_inputs))
     
-    # Set initial condition
-    X[0] = x0
+    # Set initial condition (convert to numpy for storage)
+    X[0] = np.array(x0)
     
     # Early stopping parameters
     settling_steps_required = int(settling_duration / dt)
     settled_counter = 0
     
-    # Simulate using RK4 integration (more stable than Euler for stiff systems)
+    # Current state (JAX array for computation)
+    x_current = jnp.array(x0)
+    
+    # Simulate
     actual_steps = n_steps_max
     for i in range(n_steps_max - 1):
-        # Compute control (LQR uses current state)
-        u = -K @ X[i]
-        U[i] = u
+        # Simulate one step
+        x_next, u, rng_key = simulate_lqr_step(
+            x_current, A_sim, B_sim, K, dt, process_noise_std, rng_key
+        )
         
-        # RK4 integration (4th order Runge-Kutta)
-        # More accurate and stable than Euler, especially for stiff systems
-        k1 = A_sim @ X[i] + B_sim @ u
-        k2 = A_sim @ (X[i] + 0.5 * dt * k1) + B_sim @ u
-        k3 = A_sim @ (X[i] + 0.5 * dt * k2) + B_sim @ u
-        k4 = A_sim @ (X[i] + dt * k3) + B_sim @ u
+        # Store (convert to numpy)
+        X[i + 1] = np.array(x_next)
+        U[i] = np.array(u)
         
-        # Add process noise to state
-        noise = np.random.randn(n_states) * process_noise_std
-        
-        # RK4 update
-        X[i + 1] = X[i] + (dt / 6.0) * (k1 + 2*k2 + 2*k3 + k4) + noise
+        # Update current state
+        x_current = x_next
         
         # Check for early stopping
         if early_stop:
-            state_norm = np.linalg.norm(X[i + 1])
+            state_norm = float(jnp.linalg.norm(x_next))
             
             if state_norm < settling_threshold:
                 settled_counter += 1
-                # If settled for required duration, stop simulation
                 if settled_counter >= settling_steps_required:
-                    actual_steps = i + 2  # Include current step
+                    actual_steps = i + 2
                     break
             else:
-                settled_counter = 0  # Reset counter if threshold exceeded
+                settled_counter = 0
     
     # Final control
     if actual_steps < n_steps_max:
-        U[actual_steps - 1] = -K @ X[actual_steps - 1]
+        U[actual_steps - 1] = np.array(-K @ x_current)
     else:
-        U[-1] = -K @ X[-1]
+        U[-1] = np.array(-K @ jnp.array(X[-1]))
     
     # Return only the actually simulated portion
     t = t_max[:actual_steps]

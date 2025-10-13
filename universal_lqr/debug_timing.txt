@@ -1,0 +1,402 @@
+======================================================================
+======================= FAST CPU CONFIG LOADED =======================
+======================================================================
+Model size: ~40k parameters (vs 200k in normal config)
+Layers: 2 (vs 4)
+d_model: 32 (vs 64)
+Epochs: 20 (vs 50)
+Expected training time: ~12-20 hours
+======================================================================
+================================================================================
+==================== JAX Universal LQR Transformer Training ====================
+================================================================================
+
+================================================================================
+DEVICE CONFIGURATION
+================================================================================
+Available devices: 1
+Device type: cpu
+Device: TFRT_CPU_0
+Backend: cpu
+⚠ Using CPU (slower training expected)
+
+
+Loading data...
+  Training batches: 142431
+  Validation batches: 25134
+  Sequences per epoch: 72,924,672
+  Normalization stats saved: ./models/normalization_stats_jax.pkl
+
+Initializing model...
+Model parameters: 30,086
+
+Training Configuration:
+  Epochs: 20
+  Batch size: 512
+  Learning rate: 0.0003
+  Warmup steps: 1000
+  Weight decay: 0.0001
+  Gradient clip: 1.0
+
+================================================================================
+STARTING TRAINING (Memory-efficient streaming from HDF5)
+================================================================================
+Note: Data is streamed in batches, never loading full dataset into RAM
+
+
+================================================================================
+DEBUG: Starting Epoch 1
+================================================================================
+Total batches (before stopping): 142431
+Will process 30 batches for debugging
+
+
+Batch 1/30 TIMING:
+  Convert (np->jax):  0.0111s
+  RNG split:          0.000168s
+  Train call:         1.7932s
+  Block/sync:         0.0724s
+  Train total:        1.8656s
+  BATCH TOTAL:        1.8768s
+  Loss:               15781.453125
+  Avg Loss so far:    15781.453125
+
+Batch 2/30 TIMING:
+  Convert (np->jax):  0.0004s
+  RNG split:          0.000121s
+  Train call:         1.3943s
+  Block/sync:         0.0663s
+  Train total:        1.4606s
+  BATCH TOTAL:        1.4612s
+  Loss:               7438.873535
+  Avg Loss so far:    11610.163330
+
+Batch 3/30 TIMING:
+  Convert (np->jax):  0.0002s
+  RNG split:          0.000108s
+  Train call:         0.0007s
+  Block/sync:         0.0621s
+  Train total:        0.0628s
+  BATCH TOTAL:        0.0631s
+  Loss:               38423.460938
+  Avg Loss so far:    20547.929199
+
+Batch 4/30 TIMING:
+  Convert (np->jax):  0.0003s
+  RNG split:          0.000110s
+  Train call:         0.0005s
+  Block/sync:         0.0617s
+  Train total:        0.0622s
+  BATCH TOTAL:        0.0626s
+  Loss:               24365.281250
+  Avg Loss so far:    21502.267212
+
+Batch 5/30 TIMING:
+  Convert (np->jax):  0.0002s
+  RNG split:          0.000105s
+  Train call:         0.0007s
+  Block/sync:         0.0623s
+  Train total:        0.0630s
+  BATCH TOTAL:        0.0633s
+  Loss:               21474.253906
+  Avg Loss so far:    21496.664551
+
+Batch 6/30 TIMING:
+  Convert (np->jax):  0.0002s
+  RNG split:          0.000111s
+  Train call:         0.0004s
+  Block/sync:         0.0609s
+  Train total:        0.0612s
+  BATCH TOTAL:        0.0616s
+  Loss:               4064.527344
+  Avg Loss so far:    18591.308350
+
+Batch 7/30 TIMING:
+  Convert (np->jax):  0.0003s
+  RNG split:          0.000123s
+  Train call:         0.0004s
+  Block/sync:         0.0628s
+  Train total:        0.0632s
+  BATCH TOTAL:        0.0636s
+  Loss:               21292.152344
+  Avg Loss so far:    18977.143206
+
+Batch 8/30 TIMING:
+  Convert (np->jax):  0.0002s
+  RNG split:          0.000099s
+  Train call:         0.0005s
+  Block/sync:         0.0607s
+  Train total:        0.0612s
+  BATCH TOTAL:        0.0615s
+  Loss:               31413.164062
+  Avg Loss so far:    20531.645813
+
+Batch 9/30 TIMING:
+  Convert (np->jax):  0.0003s
+  RNG split:          0.000121s
+  Train call:         0.0005s
+  Block/sync:         0.0665s
+  Train total:        0.0671s
+  BATCH TOTAL:        0.0675s
+  Loss:               8893.780273
+  Avg Loss so far:    19238.549642
+
+Batch 10/30 TIMING:
+  Convert (np->jax):  0.0002s
+  RNG split:          0.000101s
+  Train call:         0.0005s
+  Block/sync:         0.0626s
+  Train total:        0.0631s
+  BATCH TOTAL:        0.0634s
+  Loss:               9143.598633
+  Avg Loss so far:    18229.054541
+
+Batch 11/30 TIMING:
+  Convert (np->jax):  0.0002s
+  RNG split:          0.000125s
+  Train call:         0.0004s
+  Block/sync:         0.0591s
+  Train total:        0.0595s
+  BATCH TOTAL:        0.0599s
+  Loss:               46849.546875
+  Avg Loss so far:    20830.917480
+
+Batch 12/30 TIMING:
+  Convert (np->jax):  0.0003s
+  RNG split:          0.000112s
+  Train call:         0.0004s
+  Block/sync:         0.0618s
+  Train total:        0.0622s
+  BATCH TOTAL:        0.0626s
+  Loss:               9247.036133
+  Avg Loss so far:    19865.594035
+
+Batch 13/30 TIMING:
+  Convert (np->jax):  0.0002s
+  RNG split:          0.000102s
+  Train call:         0.0003s
+  Block/sync:         0.0636s
+  Train total:        0.0639s
+  BATCH TOTAL:        0.0642s
+  Loss:               35345.988281
+  Avg Loss so far:    21056.393592
+
+Batch 14/30 TIMING:
+  Convert (np->jax):  0.0002s
+  RNG split:          0.000112s
+  Train call:         0.0009s
+  Block/sync:         0.0590s
+  Train total:        0.0600s
+  BATCH TOTAL:        0.0603s
+  Loss:               19133.847656
+  Avg Loss so far:    20919.068883
+
+Batch 15/30 TIMING:
+  Convert (np->jax):  0.0003s
+  RNG split:          0.000105s
+  Train call:         0.0004s
+  Block/sync:         0.0571s
+  Train total:        0.0575s
+  BATCH TOTAL:        0.0579s
+  Loss:               16235.525391
+  Avg Loss so far:    20606.832650
+
+Batch 16/30 TIMING:
+  Convert (np->jax):  0.0003s
+  RNG split:          0.000105s
+  Train call:         0.0003s
+  Block/sync:         0.0597s
+  Train total:        0.0600s
+  BATCH TOTAL:        0.0603s
+  Loss:               21482.863281
+  Avg Loss so far:    20661.584564
+
+Batch 17/30 TIMING:
+  Convert (np->jax):  0.0003s
+  RNG split:          0.000127s
+  Train call:         0.0007s
+  Block/sync:         0.0605s
+  Train total:        0.0613s
+  BATCH TOTAL:        0.0617s
+  Loss:               10105.065430
+  Avg Loss so far:    20040.612850
+
+Batch 18/30 TIMING:
+  Convert (np->jax):  0.0002s
+  RNG split:          0.000117s
+  Train call:         0.0005s
+  Block/sync:         0.0625s
+  Train total:        0.0630s
+  BATCH TOTAL:        0.0633s
+  Loss:               15115.457031
+  Avg Loss so far:    19766.993083
+
+Batch 19/30 TIMING:
+  Convert (np->jax):  0.0002s
+  RNG split:          0.000109s
+  Train call:         0.0005s
+  Block/sync:         0.0591s
+  Train total:        0.0596s
+  BATCH TOTAL:        0.0600s
+  Loss:               9761.539062
+  Avg Loss so far:    19240.390240
+
+Batch 20/30 TIMING:
+  Convert (np->jax):  0.0002s
+  RNG split:          0.000109s
+  Train call:         0.0004s
+  Block/sync:         0.0608s
+  Train total:        0.0612s
+  BATCH TOTAL:        0.0616s
+  Loss:               9924.737305
+  Avg Loss so far:    18774.607593
+
+Batch 21/30 TIMING:
+  Convert (np->jax):  0.0002s
+  RNG split:          0.000102s
+  Train call:         0.0004s
+  Block/sync:         0.0602s
+  Train total:        0.0605s
+  BATCH TOTAL:        0.0609s
+  Loss:               16749.070312
+  Avg Loss so far:    18678.153437
+
+Batch 22/30 TIMING:
+  Convert (np->jax):  0.0002s
+  RNG split:          0.000107s
+  Train call:         0.0004s
+  Block/sync:         0.0591s
+  Train total:        0.0596s
+  BATCH TOTAL:        0.0599s
+  Loss:               26180.068359
+  Avg Loss so far:    19019.149569
+
+Batch 23/30 TIMING:
+  Convert (np->jax):  0.0003s
+  RNG split:          0.000116s
+  Train call:         0.0007s
+  Block/sync:         0.0582s
+  Train total:        0.0588s
+  BATCH TOTAL:        0.0592s
+  Loss:               11835.199219
+  Avg Loss so far:    18706.803902
+
+Batch 24/30 TIMING:
+  Convert (np->jax):  0.0002s
+  RNG split:          0.000106s
+  Train call:         0.0004s
+  Block/sync:         0.0592s
+  Train total:        0.0595s
+  BATCH TOTAL:        0.0598s
+  Loss:               9627.531250
+  Avg Loss so far:    18328.500875
+
+Batch 25/30 TIMING:
+  Convert (np->jax):  0.0002s
+  RNG split:          0.000106s
+  Train call:         0.0004s
+  Block/sync:         0.0672s
+  Train total:        0.0676s
+  BATCH TOTAL:        0.0680s
+  Loss:               9498.437500
+  Avg Loss so far:    17975.298340
+
+Batch 26/30 TIMING:
+  Convert (np->jax):  0.0002s
+  RNG split:          0.000111s
+  Train call:         0.0005s
+  Block/sync:         0.0677s
+  Train total:        0.0682s
+  BATCH TOTAL:        0.0685s
+  Loss:               14149.001953
+  Avg Loss so far:    17828.133094
+
+Batch 27/30 TIMING:
+  Convert (np->jax):  0.0002s
+  RNG split:          0.000108s
+  Train call:         0.0003s
+  Block/sync:         0.0620s
+  Train total:        0.0622s
+  BATCH TOTAL:        0.0626s
+  Loss:               17865.175781
+  Avg Loss so far:    17829.505046
+
+Batch 28/30 TIMING:
+  Convert (np->jax):  0.0003s
+  RNG split:          0.000123s
+  Train call:         0.0006s
+  Block/sync:         0.0619s
+  Train total:        0.0625s
+  BATCH TOTAL:        0.0629s
+  Loss:               32352.951172
+  Avg Loss so far:    18348.199550
+
+Batch 29/30 TIMING:
+  Convert (np->jax):  0.0002s
+  RNG split:          0.000104s
+  Train call:         0.0006s
+  Block/sync:         0.0597s
+  Train total:        0.0603s
+  BATCH TOTAL:        0.0607s
+  Loss:               36123.324219
+  Avg Loss so far:    18961.134883
+
+Batch 30/30 TIMING:
+  Convert (np->jax):  0.0002s
+  RNG split:          0.000102s
+  Train call:         0.0005s
+  Block/sync:         0.0591s
+  Train total:        0.0596s
+  BATCH TOTAL:        0.0599s
+  Loss:               10605.066406
+  Avg Loss so far:    18682.599268
+
+================================================================================
+DEBUG: Stopping after 30 batches for analysis
+================================================================================
+
+DEBUG: Skipping validation to save time
+
+================================================================================
+Epoch 1/20 Summary
+================================================================================
+  Train Loss:     18682.599268
+  Val Loss:       18682.599268
+  Epoch Time:     6.69 min (401.6s)
+  Elapsed Time:   6.80 min
+  Checkpoint saved: ./models/best_model_jax.pkl
+  ✓ New best model! Val loss: 18682.599268
+----------------------------------------------------------------------
+
+DEBUG: Exiting after 1 epoch (30 batches) for analysis
+
+DEBUG: Skipping checkpoint saves
+
+================================================================================
+============================== TRAINING COMPLETE! ==============================
+================================================================================
+
+                                 FINAL RESULTS                                  
+================================================================================
+  Best Validation Loss:        18682.599268
+  Final Training Loss:         18682.599268
+  Final Validation Loss:       18682.599268
+
+                               TIMING STATISTICS                                
+================================================================================
+  Total Training Time:         6.80 minutes (0.11 hours)
+  Average Epoch Time:          6.69 minutes
+  Total Epochs:                20
+  Device:                      cpu
+
+                                  OUTPUT FILES                                  
+================================================================================
+  Best Model:                  ./models/best_model_jax.pkl
+  Final Model:                 ./models/final_model_jax.pkl
+  Training History:            ./logs/training_history_jax.pkl
+  Normalization Stats:         ./models/normalization_stats_jax.pkl
+
+================================================================================
+====================== ✓ Training completed successfully! ======================
+================================================================================
+

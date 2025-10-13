@@ -2,6 +2,7 @@
 Mechanical LTI Systems
 """
 
+import jax.numpy as jnp
 import numpy as np
 from .base_system import LTISystem
 
@@ -22,16 +23,16 @@ class MassSpringDamper(LTISystem):
     
     def get_matrices(self):
         m, c, k = self.params['m'], self.params['c'], self.params['k']
-        A = np.array([
+        A = jnp.array([
             [0, 1],
             [-k/m, -c/m]
         ])
-        B = np.array([[0], [1/m]])
+        B = jnp.array([[0], [1/m]])
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([10.0, 1.0])  # Penalize position more
-        R = np.array([[0.1]])
+        Q = jnp.diag(jnp.array([10.0, 1.0]))  # Penalize position more
+        R = jnp.array([[1.0]])
         return Q, R
     
     def sample_initial_condition(self):
@@ -43,7 +44,7 @@ class MassSpringDamper(LTISystem):
         ])
     
     def get_typical_state_magnitude(self):
-        return np.array([1.0, 0.5])
+        return jnp.array([1.0, 0.5])
 
 
 class SimplePendulum(LTISystem):
@@ -64,16 +65,16 @@ class SimplePendulum(LTISystem):
     def get_matrices(self):
         m, l, b, g = self.params['m'], self.params['l'], self.params['b'], self.params['g']
         I = m * l**2  # moment of inertia
-        A = np.array([
+        A = jnp.array([
             [0, 1],
             [g/l, -b/I]
         ])
-        B = np.array([[0], [1/I]])
+        B = jnp.array([[0], [1/I]])
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([20.0, 1.0])
-        R = np.array([[0.1]])
+        Q = jnp.diag(jnp.array([20.0, 1.0]))
+        R = jnp.array([[1.0]])
         return Q, R
     
     def sample_initial_condition(self):
@@ -84,7 +85,7 @@ class SimplePendulum(LTISystem):
         ])
     
     def get_typical_state_magnitude(self):
-        return np.array([0.3, 0.2])
+        return jnp.array([0.3, 0.2])
 
 
 class InvertedPendulum(LTISystem):
@@ -105,16 +106,16 @@ class InvertedPendulum(LTISystem):
     def get_matrices(self):
         m, l, b, g = self.params['m'], self.params['l'], self.params['b'], self.params['g']
         I = m * l**2
-        A = np.array([
+        A = jnp.array([
             [0, 1],
             [g/l, -b/I]  # Positive g/l makes it unstable
         ])
-        B = np.array([[0], [1/I]])
+        B = jnp.array([[0], [1/I]])
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([50.0, 5.0])  # High penalty on angle
-        R = np.array([[0.01]])
+        Q = jnp.diag(jnp.array([50.0, 5.0]))  # High penalty on angle
+        R = jnp.array([[10.0]])  # Increased to reduce huge control signals (was 0.1)
         return Q, R
     
     def sample_initial_condition(self):
@@ -126,7 +127,7 @@ class InvertedPendulum(LTISystem):
         ])
     
     def get_typical_state_magnitude(self):
-        return np.array([0.2, 0.1])
+        return jnp.array([0.2, 0.1])
 
 
 class DoublePendulum(LTISystem):
@@ -155,18 +156,18 @@ class DoublePendulum(LTISystem):
         g = self.params['g']
         
         # Linearized around downward position
-        A = np.array([
+        A = jnp.array([
             [0, 0, 1, 0],
             [0, 0, 0, 1],
             [g*(m1+m2)/(m1*l1), -g*m2/(m1*l1), -b1/(m1*l1**2), 0],
             [-g*(m1+m2)/(m2*l2), g*(m1+m2)/(m2*l2), 0, -b2/(m2*l2**2)]
         ])
-        B = np.array([[0], [0], [1/(m1*l1**2)], [0]])
+        B = jnp.array([[0], [0], [1/(m1*l1**2)], [0]])
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([10.0, 10.0, 1.0, 1.0])
-        R = np.array([[0.1]])
+        Q = jnp.diag(jnp.array([10.0, 10.0, 10.0, 10.0]))
+        R = jnp.array([[10.0]])  # Increased to reduce large control (was 1.0)
         return Q, R
     
     def sample_initial_condition(self):
@@ -179,7 +180,7 @@ class DoublePendulum(LTISystem):
         ])
     
     def get_typical_state_magnitude(self):
-        return np.array([0.3, 0.3, 0.2, 0.2])
+        return jnp.array([0.3, 0.3, 0.2, 0.2])
 
 
 class CartPole(LTISystem):
@@ -205,18 +206,18 @@ class CartPole(LTISystem):
         I = m * l**2
         total_mass = M + m
         
-        A = np.array([
+        A = jnp.array([
             [0, 1, 0, 0],
             [0, -b/M, -m*g/M, 0],
             [0, 0, 0, 1],
             [0, b/(M*l), (M+m)*g/(M*l), 0]
         ])
-        B = np.array([[0], [1/M], [0], [-1/(M*l)]])
+        B = jnp.array([[0], [1/M], [0], [-1/(M*l)]])
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([10.0, 1.0, 100.0, 10.0])  # High penalty on pole angle
-        R = np.array([[0.01]])
+        Q = jnp.diag(jnp.array([10.0, 1.0, 100.0, 10.0]))  # High penalty on pole angle
+        R = jnp.array([[10.0]])  # Increased to reduce huge control signals (was 0.1)
         return Q, R
     
     def sample_initial_condition(self):
@@ -229,7 +230,7 @@ class CartPole(LTISystem):
         ])
     
     def get_typical_state_magnitude(self):
-        return np.array([0.5, 0.2, 0.15, 0.1])
+        return jnp.array([0.5, 0.2, 0.15, 0.1])
 
 
 class Acrobot(LTISystem):
@@ -258,18 +259,18 @@ class Acrobot(LTISystem):
         l1, l2 = self.params['l1'], self.params['l2']
         g = self.params['g']
         
-        A = np.array([
+        A = jnp.array([
             [0, 0, 1, 0],
             [0, 0, 0, 1],
             [g*(m1+m2)/l1, -g*m2/l1, 0, 0],
             [-g/l2, g/l2, 0, 0]
         ])
-        B = np.array([[0], [0], [0], [1/(m2*l2**2)]])
+        B = jnp.array([[0], [0], [0], [1/(m2*l2**2)]])
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([15.0, 15.0, 2.0, 2.0])
-        R = np.array([[0.1]])
+        Q = jnp.diag(jnp.array([15.0, 15.0, 2.0, 2.0]))
+        R = jnp.array([[10.0]])  # Increased to reduce large control (was 1.0)
         return Q, R
     
     def sample_initial_condition(self):
@@ -312,18 +313,18 @@ class FurutaPendulum(LTISystem):
         # Total moment of inertia
         J_total = Jr + mp * lr**2
         
-        A = np.array([
+        A = jnp.array([
             [0, 0, 1, 0],
             [0, 0, 0, 1],
             [0, 0, -br/J_total, 0],
             [0, mp*g*lp/Jp, 0, -bp/Jp]
         ])
-        B = np.array([[0], [0], [1/J_total], [lr/(Jp*lp)]])
+        B = jnp.array([[0], [0], [1/J_total], [lr/(Jp*lp)]])
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([1.0, 100.0, 1.0, 10.0])  # Very high penalty on pendulum angle
-        R = np.array([[1.0]])  # Higher R to prevent excessive control
+        Q = jnp.diag(jnp.array([1.0, 100.0, 1.0, 10.0]))  # Very high penalty on pendulum angle
+        R = jnp.array([[10.0]])  # Higher R to prevent excessive control
         return Q, R
     
     def sample_initial_condition(self):
@@ -358,18 +359,18 @@ class BallAndBeam(LTISystem):
         
         J_total = Jb + m*R**2
         
-        A = np.array([
+        A = jnp.array([
             [0, 1, 0, 0],
             [0, 0, -m*g/J_total*R**2, 0],
             [0, 0, 0, 1],
             [0, 0, 0, 0]
         ])
-        B = np.array([[0], [0], [0], [1]])
+        B = jnp.array([[0], [0], [0], [1]])
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([20.0, 2.0, 10.0, 1.0])
-        R = np.array([[0.1]])
+        Q = jnp.diag(jnp.array([20.0, 2.0, 10.0, 1.0]))
+        R = jnp.array([[1.0]])
         return Q, R
     
     def sample_initial_condition(self):
@@ -401,7 +402,7 @@ class BallAndPlate(LTISystem):
         m, R, g, Jb = self.params['m'], self.params['R'], self.params['g'], self.params['Jb']
         J_total = Jb + m*R**2
         
-        A = np.array([
+        A = jnp.array([
             [0, 0, 1, 0, 0, 0],
             [0, 0, 0, 1, 0, 0],
             [0, 0, 0, 0, -m*g/J_total*R**2, 0],
@@ -409,7 +410,7 @@ class BallAndPlate(LTISystem):
             [0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0]
         ])
-        B = np.array([
+        B = jnp.array([
             [0, 0],
             [0, 0],
             [0, 0],
@@ -420,8 +421,8 @@ class BallAndPlate(LTISystem):
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([20.0, 20.0, 2.0, 2.0, 10.0, 10.0])
-        R = np.diag([0.1, 0.1])
+        Q = jnp.diag(jnp.array([20.0, 20.0, 2.0, 2.0, 10.0, 10.0]))
+        R = jnp.diag(jnp.array([1.0, 1.0]))
         return Q, R
     
     def sample_initial_condition(self):
@@ -464,18 +465,18 @@ class ReactionWheelPendulum(LTISystem):
         # Improved coupling model
         J_total = Jp + Jw
         
-        A = np.array([
+        A = jnp.array([
             [0, 0, 1, 0],
             [0, 0, 0, 1],
             [mp*g*lp/Jp, 0, -bp/Jp, bw/Jp],
             [-mp*g*lp/Jw, 0, bp/Jw, -bw/Jw]
         ])
-        B = np.array([[0], [0], [-1/Jp], [(Jp+Jw)/(Jp*Jw)]])
+        B = jnp.array([[0], [0], [-1/Jp], [(Jp+Jw)/(Jp*Jw)]])
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([100.0, 0.1, 10.0, 0.1])  # High penalty on pendulum angle
-        R = np.array([[1.0]])  # Higher R
+        Q = jnp.diag(jnp.array([100.0, 0.1, 10.0, 0.1]))  # High penalty on pendulum angle
+        R = jnp.array([[100.0]])  # Much higher R to prevent huge control (was 10)
         return Q, R
     
     def sample_initial_condition(self):
@@ -509,20 +510,20 @@ class FlexibleBeam(LTISystem):
                          self.params['L'], self.params['m'], self.params['c'])
         
         # Natural frequency of first mode
-        omega_n = (1.875**2) * np.sqrt(E*I / (m*L**4))
+        omega_n = (1.875**2) * jnp.sqrt(E*I / (m*L**4))
         
         # Heavily damped system to prevent stiffness
         zeta = 2.0  # Overdamped (zeta > 1)
-        A = np.array([
+        A = jnp.array([
             [0, 1],
             [-omega_n**2, -2*zeta*omega_n]  # Overdamped system
         ])
-        B = np.array([[0], [1/m]])
+        B = jnp.array([[0], [1/m]])
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([1000.0, 10.0])  # Higher position penalty
-        R = np.array([[100.0]])  # Very high R to prevent aggressive control
+        Q = jnp.diag(jnp.array([100.0, 100.0]))  # Higher position penalty
+        R = jnp.array([[100.0]])  # Very high R to prevent aggressive control
         return Q, R
     
     def sample_initial_condition(self):
@@ -533,7 +534,7 @@ class FlexibleBeam(LTISystem):
         ])
     
     def get_typical_state_magnitude(self):
-        return np.array([0.01, 0.05])
+        return jnp.array([0.01, 0.05])
 
 
 class MagneticLevitation(LTISystem):
@@ -557,21 +558,21 @@ class MagneticLevitation(LTISystem):
                          self.params['L'], self.params['R'], self.params['g'])
         
         # Linearized around equilibrium
-        i_eq = np.sqrt(m * g / k)
+        i_eq = jnp.sqrt(m * g / k)
         z_eq = 0.02  # equilibrium position - higher
         
         # More conservative linearization
-        A = np.array([
+        A = jnp.array([
             [0, 1, 0],
             [g/z_eq, -0.1, -k*i_eq/(m*z_eq)],  # Simplified and stabilized
             [0, 0, -R/L]
         ])
-        B = np.array([[0], [0], [1/L]])
+        B = jnp.array([[0], [0], [1/L]])
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([100.0, 10.0, 0.1])  # Higher position penalty, lower current
-        R = np.array([[10.0]])  # Much higher R
+        Q = jnp.diag(jnp.array([100.0, 10.0, 0.1]))  # Higher position penalty, lower current
+        R = jnp.array([[100.0]])  # Much higher R
         return Q, R
     
     def sample_initial_condition(self):
@@ -583,7 +584,7 @@ class MagneticLevitation(LTISystem):
         ])
     
     def get_typical_state_magnitude(self):
-        return np.array([0.005, 0.01, 0.5])
+        return jnp.array([0.005, 0.01, 0.5])
 
 
 class SuspensionSystem(LTISystem):
@@ -606,18 +607,18 @@ class SuspensionSystem(LTISystem):
         ms, mu, ks, kt, cs = (self.params['ms'], self.params['mu'], 
                               self.params['ks'], self.params['kt'], self.params['cs'])
         
-        A = np.array([
+        A = jnp.array([
             [0, 0, 1, 0],
             [0, 0, 0, 1],
             [-ks/ms, ks/ms, -cs/ms, cs/ms],
             [ks/mu, -(ks+kt)/mu, cs/mu, -cs/mu]
         ])
-        B = np.array([[0], [0], [1/ms], [-1/mu]])
+        B = jnp.array([[0], [0], [1/ms], [-1/mu]])
         return A, B
     
     def get_default_lqr_weights(self):
-        Q = np.diag([100.0, 10.0, 10.0, 1.0])  # Higher penalties
-        R = np.array([[1.0]])  # Much higher R
+        Q = jnp.diag(jnp.array([100.0, 10.0, 10.0, 100.0]))  # Higher penalties
+        R = jnp.array([[10.0]])  # Much higher R
         return Q, R
     
     def sample_initial_condition(self):
@@ -630,5 +631,5 @@ class SuspensionSystem(LTISystem):
         ])
     
     def get_typical_state_magnitude(self):
-        return np.array([0.05, 0.02, 0.2, 0.5])
+        return jnp.array([0.05, 0.02, 0.2, 0.5])
 

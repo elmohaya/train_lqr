@@ -1,5 +1,5 @@
 """
-LTI System Families for Universal LQR Transformer
+LTI System Families for Universal LQR Transformer (JAX version)
 """
 
 from .base_system import LTISystem
@@ -27,22 +27,21 @@ __all__ = [
     'FlexibleBeam',
     'MagneticLevitation',
     'SuspensionSystem',
-    # Electrical (1 - kept only DCMotor, removed 7 fast converters/circuits)
+    # Electrical (1)
     'DCMotor',
-    # Robotics (12 - added 8 new diverse systems!)
+    # Robotics (12)
     'TwoLinkArm',
     'ThreeLinkManipulator',
     'UnicycleRobot',
     'DifferentialDriveRobot',
-    'SCARARobot',             # NEW
-    'SegwayRobot',            # NEW
-    'OmnidirectionalRobot',   # NEW
-    # 'PlanarQuadruped',      # Excluded - LQR fails (too complex)
-    'CableDrivenRobot',       # NEW
-    'FlexibleJointRobot',     # NEW
-    'PlanarBiped',            # NEW
-    'SixDOFManipulator',      # NEW
-    'DualArmRobot',           # NEW
+    'SCARARobot',
+    'SegwayRobot',
+    'OmnidirectionalRobot',
+    'CableDrivenRobot',
+    'FlexibleJointRobot',
+    'PlanarBiped',
+    'SixDOFManipulator',
+    'DualArmRobot',
     # Vehicles (3)
     'VehicleLateralDynamics',
     'LongitudinalCruiseControl',
@@ -56,4 +55,3 @@ __all__ = [
     'LotkaVolterra',
     'ChemicalReactor',
 ]
-

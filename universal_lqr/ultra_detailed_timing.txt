@@ -1,0 +1,342 @@
+======================================================================
+======================= FAST CPU CONFIG LOADED =======================
+======================================================================
+Model size: ~40k parameters (vs 200k in normal config)
+Layers: 2 (vs 4)
+d_model: 32 (vs 64)
+Epochs: 20 (vs 50)
+Expected training time: ~12-20 hours
+======================================================================
+================================================================================
+==================== JAX Universal LQR Transformer Training ====================
+================================================================================
+
+================================================================================
+DEVICE CONFIGURATION
+================================================================================
+Available devices: 1
+Device type: cpu
+Device: TFRT_CPU_0
+Backend: cpu
+⚠ Using CPU (slower training expected)
+
+
+Loading data...
+  Training batches: 142431
+  Validation batches: 25134
+  Sequences per epoch: 72,924,672
+  Normalization stats saved: ./models/normalization_stats_jax.pkl
+
+Initializing model...
+Model parameters: 30,086
+
+Training Configuration:
+  Epochs: 20
+  Batch size: 512
+  Learning rate: 0.0003
+  Warmup steps: 1000
+  Weight decay: 0.0001
+  Gradient clip: 1.0
+
+================================================================================
+STARTING TRAINING (Memory-efficient streaming from HDF5)
+================================================================================
+Note: Data is streamed in batches, never loading full dataset into RAM
+
+
+================================================================================
+DEBUG: Starting Epoch 1
+================================================================================
+Total batches (before stopping): 142431
+Will process 10 batches with ULTRA-DETAILED profiling
+
+
+======================================================================
+Batch 1/10 DETAILED BREAKDOWN:
+======================================================================
+Data Shapes: input=(512, 32, 19), control=(512, 6), mask=(512, 6)
+
+  DATA CONVERSION:
+    Shape check:          0.03ms
+    Input->JAX:           10.24ms
+    Controls->JAX:        5.62ms
+    Masks->JAX:           0.06ms
+    Dict creation:        0.00ms
+    TOTAL CONVERSION:     15.95ms
+
+  TRAINING STEP:
+    RNG split:            0.38ms
+    train_step() call:    1586.01ms
+    Block/sync (get loss):66.67ms
+    State access:         0.00ms
+
+  TOTALS:
+    Batch total time:     1669.02ms (1.6690s)
+    Loss:                 15781.453125
+    Avg Loss so far:      15781.453125
+
+======================================================================
+Batch 2/10 DETAILED BREAKDOWN:
+======================================================================
+Data Shapes: input=(512, 32, 19), control=(512, 6), mask=(512, 6)
+
+  DATA CONVERSION:
+    Shape check:          0.00ms
+    Input->JAX:           0.16ms
+    Controls->JAX:        0.04ms
+    Masks->JAX:           0.03ms
+    Dict creation:        0.01ms
+    TOTAL CONVERSION:     0.24ms
+
+  TRAINING STEP:
+    RNG split:            0.10ms
+    train_step() call:    1318.33ms
+    Block/sync (get loss):68.50ms
+    State access:         0.01ms
+
+  TOTALS:
+    Batch total time:     1387.18ms (1.3872s)
+    Loss:                 7438.873535
+    Avg Loss so far:      11610.163330
+
+======================================================================
+Batch 3/10 DETAILED BREAKDOWN:
+======================================================================
+Data Shapes: input=(512, 32, 19), control=(512, 6), mask=(512, 6)
+
+  DATA CONVERSION:
+    Shape check:          0.00ms
+    Input->JAX:           0.19ms
+    Controls->JAX:        0.05ms
+    Masks->JAX:           0.03ms
+    Dict creation:        0.01ms
+    TOTAL CONVERSION:     0.27ms
+
+  TRAINING STEP:
+    RNG split:            0.12ms
+    train_step() call:    0.40ms
+    Block/sync (get loss):61.15ms
+    State access:         0.01ms
+
+  TOTALS:
+    Batch total time:     61.96ms (0.0620s)
+    Loss:                 38423.460938
+    Avg Loss so far:      20547.929199
+
+======================================================================
+Batch 4/10 DETAILED BREAKDOWN:
+======================================================================
+Data Shapes: input=(512, 32, 19), control=(512, 6), mask=(512, 6)
+
+  DATA CONVERSION:
+    Shape check:          0.00ms
+    Input->JAX:           0.12ms
+    Controls->JAX:        0.04ms
+    Masks->JAX:           0.03ms
+    Dict creation:        0.01ms
+    TOTAL CONVERSION:     0.20ms
+
+  TRAINING STEP:
+    RNG split:            0.10ms
+    train_step() call:    0.24ms
+    Block/sync (get loss):62.93ms
+    State access:         0.01ms
+
+  TOTALS:
+    Batch total time:     63.49ms (0.0635s)
+    Loss:                 24365.281250
+    Avg Loss so far:      21502.267212
+
+======================================================================
+Batch 5/10 DETAILED BREAKDOWN:
+======================================================================
+Data Shapes: input=(512, 32, 19), control=(512, 6), mask=(512, 6)
+
+  DATA CONVERSION:
+    Shape check:          0.00ms
+    Input->JAX:           0.14ms
+    Controls->JAX:        0.05ms
+    Masks->JAX:           0.04ms
+    Dict creation:        0.01ms
+    TOTAL CONVERSION:     0.24ms
+
+  TRAINING STEP:
+    RNG split:            0.11ms
+    train_step() call:    0.49ms
+    Block/sync (get loss):60.81ms
+    State access:         0.01ms
+
+  TOTALS:
+    Batch total time:     61.67ms (0.0617s)
+    Loss:                 21474.253906
+    Avg Loss so far:      21496.664551
+
+======================================================================
+Batch 6/10 DETAILED BREAKDOWN:
+======================================================================
+Data Shapes: input=(512, 32, 19), control=(512, 6), mask=(512, 6)
+
+  DATA CONVERSION:
+    Shape check:          0.00ms
+    Input->JAX:           0.14ms
+    Controls->JAX:        0.04ms
+    Masks->JAX:           0.03ms
+    Dict creation:        0.01ms
+    TOTAL CONVERSION:     0.22ms
+
+  TRAINING STEP:
+    RNG split:            0.11ms
+    train_step() call:    0.36ms
+    Block/sync (get loss):61.69ms
+    State access:         0.01ms
+
+  TOTALS:
+    Batch total time:     62.38ms (0.0624s)
+    Loss:                 4064.527344
+    Avg Loss so far:      18591.308350
+
+======================================================================
+Batch 7/10 DETAILED BREAKDOWN:
+======================================================================
+Data Shapes: input=(512, 32, 19), control=(512, 6), mask=(512, 6)
+
+  DATA CONVERSION:
+    Shape check:          0.00ms
+    Input->JAX:           0.15ms
+    Controls->JAX:        0.05ms
+    Masks->JAX:           0.03ms
+    Dict creation:        0.01ms
+    TOTAL CONVERSION:     0.24ms
+
+  TRAINING STEP:
+    RNG split:            0.11ms
+    train_step() call:    0.32ms
+    Block/sync (get loss):62.51ms
+    State access:         0.01ms
+
+  TOTALS:
+    Batch total time:     63.20ms (0.0632s)
+    Loss:                 21292.152344
+    Avg Loss so far:      18977.143206
+
+======================================================================
+Batch 8/10 DETAILED BREAKDOWN:
+======================================================================
+Data Shapes: input=(512, 32, 19), control=(512, 6), mask=(512, 6)
+
+  DATA CONVERSION:
+    Shape check:          0.00ms
+    Input->JAX:           0.18ms
+    Controls->JAX:        0.05ms
+    Masks->JAX:           0.04ms
+    Dict creation:        0.01ms
+    TOTAL CONVERSION:     0.28ms
+
+  TRAINING STEP:
+    RNG split:            0.12ms
+    train_step() call:    0.54ms
+    Block/sync (get loss):61.07ms
+    State access:         0.01ms
+
+  TOTALS:
+    Batch total time:     62.02ms (0.0620s)
+    Loss:                 31413.164062
+    Avg Loss so far:      20531.645813
+
+======================================================================
+Batch 9/10 DETAILED BREAKDOWN:
+======================================================================
+Data Shapes: input=(512, 32, 19), control=(512, 6), mask=(512, 6)
+
+  DATA CONVERSION:
+    Shape check:          0.00ms
+    Input->JAX:           0.15ms
+    Controls->JAX:        0.04ms
+    Masks->JAX:           0.03ms
+    Dict creation:        0.01ms
+    TOTAL CONVERSION:     0.24ms
+
+  TRAINING STEP:
+    RNG split:            0.11ms
+    train_step() call:    0.56ms
+    Block/sync (get loss):64.19ms
+    State access:         0.01ms
+
+  TOTALS:
+    Batch total time:     65.11ms (0.0651s)
+    Loss:                 8893.780273
+    Avg Loss so far:      19238.549642
+
+======================================================================
+Batch 10/10 DETAILED BREAKDOWN:
+======================================================================
+Data Shapes: input=(512, 32, 19), control=(512, 6), mask=(512, 6)
+
+  DATA CONVERSION:
+    Shape check:          0.00ms
+    Input->JAX:           0.16ms
+    Controls->JAX:        0.04ms
+    Masks->JAX:           0.04ms
+    Dict creation:        0.01ms
+    TOTAL CONVERSION:     0.26ms
+
+  TRAINING STEP:
+    RNG split:            0.12ms
+    train_step() call:    0.51ms
+    Block/sync (get loss):64.23ms
+    State access:         0.01ms
+
+  TOTALS:
+    Batch total time:     65.12ms (0.0651s)
+    Loss:                 9143.598633
+    Avg Loss so far:      18229.054541
+
+================================================================================
+DEBUG: Stopping after 10 batches for analysis
+================================================================================
+
+DEBUG: Skipping validation to save time
+
+================================================================================
+Epoch 1/20 Summary
+================================================================================
+  Train Loss:     18229.054541
+  Val Loss:       18229.054541
+  Epoch Time:     2.27 min (136.5s)
+  Elapsed Time:   2.38 min
+  Checkpoint saved: ./models/best_model_jax.pkl
+  ✓ New best model! Val loss: 18229.054541
+----------------------------------------------------------------------
+
+DEBUG: Exiting after 1 epoch (10 batches) for analysis
+
+DEBUG: Skipping checkpoint saves
+
+================================================================================
+============================== TRAINING COMPLETE! ==============================
+================================================================================
+
+                                 FINAL RESULTS                                  
+================================================================================
+  Best Validation Loss:        18229.054541
+  Final Training Loss:         18229.054541
+  Final Validation Loss:       18229.054541
+
+                               TIMING STATISTICS                                
+================================================================================
+  Total Training Time:         2.38 minutes (0.04 hours)
+  Average Epoch Time:          2.27 minutes
+  Total Epochs:                20
+  Device:                      cpu
+
+                                  OUTPUT FILES                                  
+================================================================================
+  Best Model:                  ./models/best_model_jax.pkl
+  Final Model:                 ./models/final_model_jax.pkl
+  Training History:            ./logs/training_history_jax.pkl
+  Normalization Stats:         ./models/normalization_stats_jax.pkl
+
+================================================================================
+====================== ✓ Training completed successfully! ======================
+================================================================================
+
